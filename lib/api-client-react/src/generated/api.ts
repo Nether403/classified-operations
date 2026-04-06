@@ -2150,6 +2150,91 @@ export const useUpsertVaultNote = <
 };
 
 /**
+ * Delete a vault note for a project (admin only)
+ * @summary Delete vault note
+ */
+export const getDeleteVaultNoteUrl = (projectId: number) => {
+  return `/api/vault/notes/${projectId}`;
+};
+
+export const deleteVaultNote = async (
+  projectId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteVaultNoteUrl(projectId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteVaultNoteMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVaultNote>>,
+    TError,
+    { projectId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteVaultNote>>,
+  TError,
+  { projectId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteVaultNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteVaultNote>>,
+    { projectId: number }
+  > = (props) => {
+    const { projectId } = props ?? {};
+
+    return deleteVaultNote(projectId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteVaultNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteVaultNote>>
+>;
+
+export type DeleteVaultNoteMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete vault note
+ */
+export const useDeleteVaultNote = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVaultNote>>,
+    TError,
+    { projectId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteVaultNote>>,
+  TError,
+  { projectId: number },
+  TContext
+> => {
+  return useMutation(getDeleteVaultNoteMutationOptions(options));
+};
+
+/**
  * List all projects including private (admin only)
  * @summary Admin list projects
  */

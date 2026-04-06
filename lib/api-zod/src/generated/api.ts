@@ -493,6 +493,14 @@ export const UpsertVaultNoteResponse = zod.object({
 });
 
 /**
+ * Delete a vault note for a project (admin only)
+ * @summary Delete vault note
+ */
+export const DeleteVaultNoteParams = zod.object({
+  projectId: zod.coerce.number(),
+});
+
+/**
  * List all projects including private (admin only)
  * @summary Admin list projects
  */

@@ -7,6 +7,7 @@ import {
   UpsertVaultNoteBody,
   UpsertVaultNoteResponse,
 } from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router: IRouter = Router();
 
@@ -75,6 +76,27 @@ router.put("/vault/notes/:projectId", async (req: Request, res: Response): Promi
     .returning();
 
   res.json(UpsertVaultNoteResponse.parse(note));
+});
+
+router.delete("/vault/notes/:projectId", requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  const rawId = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
+  const projectId = parseInt(rawId, 10);
+  if (isNaN(projectId)) {
+    res.status(400).json({ error: "Invalid project id" });
+    return;
+  }
+
+  const [deleted] = await db
+    .delete(vaultNotesTable)
+    .where(eq(vaultNotesTable.projectId, projectId))
+    .returning();
+
+  if (!deleted) {
+    res.status(404).json({ error: "Vault note not found" });
+    return;
+  }
+
+  res.sendStatus(204);
 });
 
 export default router;
