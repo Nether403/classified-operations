@@ -1,0 +1,127 @@
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
+import { Command } from "cmdk";
+import { Search, FolderGit2, Home, BarChart2, GitCompare, Command as CmdIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useListProjects } from "@workspace/api-client-react";
+import { ClassificationBadge } from "@/components/ui/classification-badge";
+
+export function CommandPalette() {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [, setLocation] = useLocation();
+
+  // Load basic info for fast search
+  const { data: projects } = useListProjects({ search });
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  const runCommand = (command: () => void) => {
+    setOpen(false);
+    command();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-24 sm:pt-32"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="w-full max-w-2xl px-4"
+          >
+            <Command
+              className="glass overflow-hidden rounded-md border border-white/10 shadow-2xl shadow-amber-500/10 flex flex-col"
+              shouldFilter={false}
+              label="Command Menu"
+            >
+              <div className="flex items-center px-4 border-b border-white/5" data-testid="cmdk-input-wrapper">
+                <Search className="w-4 h-4 text-amber-500/50 mr-3 shrink-0" />
+                <Command.Input
+                  value={search}
+                  onValueChange={setSearch}
+                  className="flex-1 bg-transparent py-4 text-sm text-white/90 placeholder:text-white/30 outline-none mono"
+                  placeholder="Search directives or intelligence dossiers..."
+                  data-testid="input-cmdk-search"
+                />
+                <div className="flex items-center gap-1 text-[10px] mono text-white/30 ml-2">
+                  <kbd className="bg-white/5 border border-white/10 rounded px-1.5 py-0.5">ESC</kbd> to close
+                </div>
+              </div>
+
+              <Command.List className="max-h-[300px] overflow-y-auto p-2 scrollbar-thin">
+                <Command.Empty className="py-6 text-center text-sm mono text-white/30" data-testid="cmdk-empty">
+                  NO DIRECTIVES FOUND.
+                </Command.Empty>
+
+                <Command.Group heading="SYSTEM DIRECTIVES" className="text-[10px] mono text-white/40 px-2 py-2">
+                  <Command.Item
+                    onSelect={() => runCommand(() => setLocation("/"))}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer aria-selected:bg-white/5 aria-selected:text-amber-400 text-white/70 text-sm transition-colors group"
+                    data-testid="cmdk-item-home"
+                  >
+                    <Home className="w-4 h-4 text-white/40 group-aria-selected:text-amber-500" />
+                    <span className="mono">Return to Base / Dosiers</span>
+                  </Command.Item>
+                  <Command.Item
+                    onSelect={() => runCommand(() => setLocation("/dashboard"))}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer aria-selected:bg-white/5 aria-selected:text-amber-400 text-white/70 text-sm transition-colors group"
+                    data-testid="cmdk-item-dashboard"
+                  >
+                    <BarChart2 className="w-4 h-4 text-white/40 group-aria-selected:text-amber-500" />
+                    <span className="mono">Command Center Dashboard</span>
+                  </Command.Item>
+                  <Command.Item
+                    onSelect={() => runCommand(() => setLocation("/compare"))}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer aria-selected:bg-white/5 aria-selected:text-amber-400 text-white/70 text-sm transition-colors group"
+                    data-testid="cmdk-item-compare"
+                  >
+                    <GitCompare className="w-4 h-4 text-white/40 group-aria-selected:text-amber-500" />
+                    <span className="mono">Intelligence Comparison</span>
+                  </Command.Item>
+                </Command.Group>
+
+                {projects && projects.length > 0 && (
+                  <Command.Group heading="DOSSIERS" className="text-[10px] mono text-white/40 px-2 py-2 mt-2">
+                    {projects.map((project) => (
+                      <Command.Item
+                        key={project.id}
+                        value={project.title}
+                        onSelect={() => runCommand(() => setLocation(`/projects/${project.slug}`))}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer aria-selected:bg-white/5 aria-selected:text-amber-400 text-white/70 text-sm transition-colors group"
+                        data-testid={`cmdk-item-project-${project.id}`}
+                      >
+                        <FolderGit2 className="w-4 h-4 text-white/40 group-aria-selected:text-amber-500 shrink-0" />
+                        <div className="flex-1 flex items-center justify-between overflow-hidden gap-4">
+                          <span className="truncate">{project.title}</span>
+                          <ClassificationBadge classification={project.classification} />
+                        </div>
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                )}
+              </Command.List>
+            </Command>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

@@ -1,15 +1,25 @@
 import { useRoute, Link } from "wouter";
 import { motion } from "framer-motion";
-import { useProject } from "@/hooks/use-projects";
+import { useListProjects, useGetProject, getGetProjectQueryKey } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 export function ProjectDetailPage() {
   const [, params] = useRoute("/projects/:slug");
   const slug = params?.slug ?? "";
-  const { data: project, isLoading } = useProject(slug);
+  
+  // Need to find the ID first because the endpoint requires an ID
+  const { data: projects } = useListProjects();
+  const projectId = projects?.find(p => p.slug === slug)?.id;
 
-  if (isLoading) {
+  const { data: project, isLoading } = useGetProject(projectId as number, { 
+    query: { 
+      enabled: !!projectId,
+      queryKey: getGetProjectQueryKey(projectId as number)
+    } 
+  });
+
+  if (isLoading || (!projectId && !projects)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -22,7 +32,7 @@ export function ProjectDetailPage() {
     );
   }
 
-  if (!project) {
+  if (!project && projects) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -30,7 +40,7 @@ export function ProjectDetailPage() {
             FILE NOT FOUND
           </div>
           <Link href="/">
-            <button className="text-[10px] mono text-amber-500/50 hover:text-amber-500 tracking-[0.2em] uppercase">
+            <button className="text-[10px] mono text-amber-500/50 hover:text-amber-500 tracking-[0.2em] uppercase transition-colors">
               ← RETURN TO DOSSIERS
             </button>
           </Link>
@@ -39,8 +49,10 @@ export function ProjectDetailPage() {
     );
   }
 
+  if (!project) return null;
+
   return (
-    <div className="min-h-screen pt-20">
+    <div className="min-h-screen pt-20" data-testid="project-detail-page">
       <div className="max-w-4xl mx-auto px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -49,8 +61,8 @@ export function ProjectDetailPage() {
         >
           <div className="mb-8">
             <Link href="/">
-              <button className="flex items-center gap-2 text-[9px] mono text-white/30 hover:text-amber-500 tracking-[0.2em] uppercase transition-colors mb-8">
-                <span>←</span> DOSSIER ARCHIVE
+              <button className="flex items-center gap-2 text-[9px] mono text-white/30 hover:text-amber-500 tracking-[0.2em] uppercase transition-colors mb-8 group" data-testid="btn-back">
+                <span className="group-hover:-translate-x-1 transition-transform">←</span> DOSSIER ARCHIVE
               </button>
             </Link>
 
@@ -68,10 +80,21 @@ export function ProjectDetailPage() {
 
             <div className="section-line mb-6" />
 
-            <p className="text-base text-white/55 leading-relaxed max-w-2xl">
+            <p className="text-base text-white/55 leading-relaxed max-w-2xl font-light">
               {project.summary}
             </p>
           </div>
+
+          {project.coverImageUrl && (
+            <motion.div 
+              className="mb-12 border border-white/10 p-2 glass rounded-md overflow-hidden"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <img src={project.coverImageUrl} alt={project.title} className="w-full h-auto aspect-video object-cover opacity-80 mix-blend-screen grayscale" />
+            </motion.div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <div className="glass p-5 md:col-span-2">
@@ -106,14 +129,14 @@ export function ProjectDetailPage() {
             </div>
           </div>
 
-          {project.sections.length > 0 && (
+          {project.sections && project.sections.length > 0 && (
             <div className="space-y-8 mb-12">
               <div className="text-[10px] mono text-white/25 tracking-[0.2em] uppercase flex items-center gap-4">
                 <span>OPERATION FILE</span>
                 <div className="section-line flex-1" />
               </div>
 
-              {project.sections.map((section, i) => (
+              {project.sections.sort((a,b) => a.sortOrder - b.sortOrder).map((section, i) => (
                 <motion.div
                   key={section.id}
                   initial={{ opacity: 0, x: -10 }}
@@ -132,29 +155,31 @@ export function ProjectDetailPage() {
                       </h3>
                     </div>
                   </div>
-                  <p className="text-sm text-white/55 leading-relaxed pl-4">
-                    {section.content}
-                  </p>
+                  <div className="text-sm text-white/55 leading-relaxed pl-4 prose prose-invert max-w-none prose-p:mb-4">
+                    {section.content.split('\n\n').map((para, idx) => (
+                      <p key={idx}>{para}</p>
+                    ))}
+                  </div>
                 </motion.div>
               ))}
             </div>
           )}
 
-          {project.relatedProjects.length > 0 && (
+          {project.relatedProjects && project.relatedProjects.length > 0 && (
             <div>
               <div className="text-[10px] mono text-white/25 tracking-[0.2em] uppercase flex items-center gap-4 mb-6">
                 <span>RELATED OPERATIONS</span>
                 <div className="section-line flex-1" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {project.relatedProjects.map((related) => (
                   <Link key={related.id} href={`/projects/${related.slug}`}>
-                    <div className="glass glass-hover p-4 cursor-pointer">
-                      <ClassificationBadge classification={related.classification} className="mb-2" />
-                      <h4 className="text-sm font-semibold text-white/75 hover:text-amber-400 transition-colors mt-2">
+                    <div className="glass glass-hover p-4 cursor-pointer h-full group">
+                      <ClassificationBadge classification={related.classification} />
+                      <h4 className="text-sm font-semibold text-white/75 group-hover:text-amber-400 transition-colors mt-4">
                         {related.title}
                       </h4>
-                      <p className="text-xs text-white/35 mt-1 line-clamp-2">{related.summary}</p>
+                      <p className="text-xs text-white/35 mt-2 line-clamp-2 leading-relaxed">{related.summary}</p>
                     </div>
                   </Link>
                 ))}

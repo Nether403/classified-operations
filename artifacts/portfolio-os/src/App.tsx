@@ -6,6 +6,10 @@ import { HomePage } from "@/pages/home";
 import { ProjectDetailPage } from "@/pages/project-detail";
 import { OperatorPage } from "@/pages/operator";
 import { VaultPage } from "@/pages/vault";
+import { DashboardPage } from "@/pages/dashboard";
+import { ComparePage } from "@/pages/compare";
+import { NotFoundPage } from "@/pages/not-found";
+import { CommandPalette } from "@/components/command-palette";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,21 +20,6 @@ const queryClient = new QueryClient({
   },
 });
 
-function NotFound() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-[10px] mono text-white/20 tracking-[0.3em] uppercase mb-4">
-          404 — FILE NOT FOUND
-        </div>
-        <a href="/" className="text-sm text-amber-500/50 hover:text-amber-500 mono transition-colors">
-          ← RETURN HOME
-        </a>
-      </div>
-    </div>
-  );
-}
-
 function Router() {
   return (
     <>
@@ -38,13 +27,16 @@ function Router() {
       <main>
         <Switch>
           <Route path="/" component={HomePage} />
+          <Route path="/dashboard" component={DashboardPage} />
           <Route path="/projects/:slug" component={ProjectDetailPage} />
+          <Route path="/compare" component={ComparePage} />
           <Route path="/operator" component={OperatorPage} />
           <Route path="/vault" component={VaultPage} />
-          <Route component={NotFound} />
+          <Route component={NotFoundPage} />
         </Switch>
       </main>
       <Footer />
+      <CommandPalette />
     </>
   );
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { useProjects, useTags, type Project } from "@/hooks/use-projects";
+import { motion, AnimatePresence } from "framer-motion";
+import { useListProjects, useListTags } from "@workspace/api-client-react";
+import type { Project } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 
@@ -13,9 +14,10 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.07, ease: "easeOut" }}
+      data-testid={`project-card-${project.id}`}
     >
       <Link href={`/projects/${project.slug}`}>
-        <div className="glass glass-hover project-card-hover cursor-pointer p-6 group">
+        <div className="glass glass-hover project-card-hover cursor-pointer p-6 group h-full flex flex-col">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex items-center gap-2 flex-wrap">
               <ClassificationBadge classification={project.classification} />
@@ -34,38 +36,40 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
             {project.summary}
           </p>
 
-          {project.techStack.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {project.techStack.slice(0, 5).map((tech) => (
-                <span
-                  key={tech}
-                  className="text-[9px] mono tracking-wide px-2 py-0.5 bg-white/5 border border-white/8 text-white/35 rounded-sm"
-                >
-                  {tech}
-                </span>
-              ))}
-              {project.techStack.length > 5 && (
-                <span className="text-[9px] mono text-white/20">+{project.techStack.length - 5}</span>
-              )}
-            </div>
-          )}
+          <div className="mt-auto">
+            {project.techStack && project.techStack.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {project.techStack.slice(0, 5).map((tech) => (
+                  <span
+                    key={tech}
+                    className="text-[9px] mono tracking-wide px-2 py-0.5 bg-white/5 border border-white/8 text-white/35 rounded-sm"
+                  >
+                    {tech}
+                  </span>
+                ))}
+                {project.techStack.length > 5 && (
+                  <span className="text-[9px] mono text-white/20">+{project.techStack.length - 5}</span>
+                )}
+              </div>
+            )}
 
-          {project.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {project.tags.slice(0, 4).map((tag) => (
-                <span
-                  key={tag.id}
-                  className="text-[9px] mono tracking-[0.1em] uppercase px-2 py-0.5 text-blue-400/50 border border-blue-500/15 rounded-sm"
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
+            {project.tags && project.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {project.tags.slice(0, 4).map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="text-[9px] mono tracking-[0.1em] uppercase px-2 py-0.5 text-blue-400/50 border border-blue-500/15 rounded-sm"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          <div className="mt-5 flex items-center gap-2 text-amber-500/50 group-hover:text-amber-500 transition-colors">
-            <div className="h-px flex-1 bg-amber-500/15 group-hover:bg-amber-500/30 transition-colors" />
-            <span className="text-[9px] mono tracking-[0.2em] uppercase">VIEW DOSSIER</span>
+            <div className="flex items-center gap-2 text-amber-500/50 group-hover:text-amber-500 transition-colors">
+              <div className="h-px flex-1 bg-amber-500/15 group-hover:bg-amber-500/30 transition-colors" />
+              <span className="text-[9px] mono tracking-[0.2em] uppercase">VIEW DOSSIER</span>
+            </div>
           </div>
         </div>
       </Link>
@@ -108,7 +112,7 @@ function HeroSection({ totalCount }: { totalCount: number }) {
 
         <div className="flex items-center gap-6 mb-6">
           <div className="section-line flex-1 max-w-xs" />
-          <span className="text-[10px] mono text-white/25 tracking-[0.2em]">
+          <span className="text-[10px] mono text-white/25 tracking-[0.2em]" data-testid="text-total-count">
             {totalCount} DOSSIERS ON FILE
           </span>
         </div>
@@ -138,7 +142,7 @@ function FilterBar({
   search: string;
   setSearch: (v: string) => void;
 }) {
-  const { data: tags } = useTags();
+  const { data: tags } = useListTags();
   const classifications = ["ALL", "RESTRICTED", "CONFIDENTIAL", "UNCLASSIFIED"];
 
   return (
@@ -152,11 +156,13 @@ function FilterBar({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter by keyword..."
             className="flex-1 bg-transparent border-0 outline-none text-sm text-white/70 placeholder:text-white/20 mono"
+            data-testid="input-search"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="text-white/30 hover:text-white/60 text-xs mono"
+              className="text-white/30 hover:text-white/60 text-xs mono px-2"
+              data-testid="btn-clear-search"
             >
               ✕
             </button>
@@ -171,6 +177,7 @@ function FilterBar({
             <button
               key={cls}
               onClick={() => setActiveClassification(cls === "ALL" ? "" : cls)}
+              data-testid={`filter-classification-${cls.toLowerCase()}`}
               className={`text-[9px] mono tracking-[0.15em] uppercase px-2.5 py-1 border transition-colors ${
                 (cls === "ALL" && !activeClassification) || cls === activeClassification
                   ? "border-amber-500/50 text-amber-500 bg-amber-500/10"
@@ -187,6 +194,7 @@ function FilterBar({
             <span className="text-[9px] mono text-white/25 tracking-[0.2em] uppercase mr-1">DOMAIN</span>
             <button
               onClick={() => setActiveTag("")}
+              data-testid="filter-tag-all"
               className={`text-[9px] mono tracking-[0.15em] uppercase px-2.5 py-1 border transition-colors ${
                 !activeTag
                   ? "border-blue-500/40 text-blue-400 bg-blue-500/10"
@@ -199,6 +207,7 @@ function FilterBar({
               <button
                 key={tag.id}
                 onClick={() => setActiveTag(tag.slug === activeTag ? "" : tag.slug)}
+                data-testid={`filter-tag-${tag.slug}`}
                 className={`text-[9px] mono tracking-[0.15em] uppercase px-2.5 py-1 border transition-colors ${
                   tag.slug === activeTag
                     ? "border-blue-500/40 text-blue-400 bg-blue-500/10"
@@ -220,7 +229,7 @@ export function HomePage() {
   const [activeClassification, setActiveClassification] = useState("");
   const [search, setSearch] = useState("");
 
-  const { data: projects, isLoading } = useProjects({
+  const { data: projects, isLoading } = useListProjects({
     tag: activeTag || undefined,
     search: search || undefined,
     classification: activeClassification || undefined,
@@ -233,7 +242,7 @@ export function HomePage() {
     : (projects ?? []);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24" data-testid="home-page">
       <HeroSection totalCount={projects?.length ?? 0} />
       <FilterBar
         activeTag={activeTag}
@@ -244,26 +253,30 @@ export function HomePage() {
         setSearch={setSearch}
       />
 
-      <div className="px-6 max-w-7xl mx-auto pb-24">
+      <div className="px-6 max-w-7xl mx-auto">
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="projects-loading">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="glass h-64 animate-pulse" />
             ))}
           </div>
         ) : displayProjects.length === 0 ? (
-          <div className="text-center py-24">
+          <div className="text-center py-24" data-testid="projects-empty">
             <div className="text-[10px] mono text-white/25 tracking-[0.3em] uppercase mb-4">
               NO RECORDS FOUND
             </div>
             <p className="text-white/30 text-sm">Adjust filters or expand search parameters</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayProjects.map((project, i) => (
-              <ProjectCard key={project.id} project={project} index={i} />
-            ))}
-          </div>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch"
+          >
+            <AnimatePresence>
+              {displayProjects.map((project, i) => (
+                <ProjectCard key={project.id} project={project} index={i} />
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
       </div>
     </div>
