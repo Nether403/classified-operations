@@ -92,11 +92,18 @@ function ProjectCard({ project }: { project: Project | undefined }) {
 
 export function ComparePage() {
   const { data: projects = [], isLoading } = useListProjects();
-  const [leftId, setLeftId] = useState<number | null>(null);
+
+  const preselectedId = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const aParam = new URLSearchParams(window.location.search).get("a");
+    return aParam ? parseInt(aParam, 10) : null;
+  }, []);
+
+  const [leftId, setLeftId] = useState<number | null>(preselectedId);
   const [rightId, setRightId] = useState<number | null>(null);
 
-  const leftProject = useMemo(() => projects.find(p => p.id === leftId), [projects, leftId]);
-  const rightProject = useMemo(() => projects.find(p => p.id === rightId), [projects, rightId]);
+  const leftProject = useMemo(() => projects.find((p) => p.id === leftId), [projects, leftId]);
+  const rightProject = useMemo(() => projects.find((p) => p.id === rightId), [projects, rightId]);
 
   return (
     <div className="min-h-screen pt-20 pb-24" data-testid="compare-page">

@@ -1,26 +1,191 @@
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { Link } from "wouter";
 import { useGetDashboardSummary, useListProjects, useListTags } from "@workspace/api-client-react";
+import type { Project, DashboardSummary } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
+    transition: { staggerChildren: 0.08 }
   }
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } }
 };
 
+function ProjectRow({ project }: { project: Project }) {
+  return (
+    <Link href={`/projects/${project.slug}`}>
+      <motion.div
+        variants={itemVariants}
+        className="glass glass-hover cursor-pointer flex items-center gap-4 px-4 py-3 group"
+        data-testid={`dashboard-project-row-${project.id}`}
+      >
+        <ClassificationBadge classification={project.classification} />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-white/85 group-hover:text-amber-400 transition-colors truncate">
+            {project.title}
+          </div>
+          <div className="text-xs text-white/35 truncate mt-0.5">{project.summary}</div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {project.techStack.slice(0, 3).map((tech) => (
+            <span key={tech} className="text-[9px] mono px-1.5 py-0.5 bg-white/5 border border-white/8 text-white/35 rounded-sm">
+              {tech}
+            </span>
+          ))}
+          {project.year && (
+            <span className="text-[9px] mono text-white/25 ml-1">{project.year}</span>
+          )}
+        </div>
+        <span className="text-[9px] mono text-amber-500/30 group-hover:text-amber-500 transition-colors tracking-widest">→</span>
+      </motion.div>
+    </Link>
+  );
+}
+
+function ProjectNetworkNode({
+  label,
+  count,
+  x,
+  y,
+  color,
+  isCenter,
+}: {
+  label: string;
+  count?: number;
+  x: number;
+  y: number;
+  color: string;
+  isCenter?: boolean;
+}) {
+  return (
+    <g>
+      <circle
+        cx={x}
+        cy={y}
+        r={isCenter ? 28 : 20}
+        fill="none"
+        stroke={color}
+        strokeWidth={isCenter ? 1.5 : 1}
+        opacity={0.4}
+      />
+      <circle
+        cx={x}
+        cy={y}
+        r={isCenter ? 24 : 16}
+        fill={color}
+        opacity={isCenter ? 0.08 : 0.05}
+      />
+      {count !== undefined && (
+        <text
+          x={x}
+          y={y + 1}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill={color}
+          fontSize={isCenter ? 14 : 11}
+          fontWeight="bold"
+          opacity={0.8}
+        >
+          {count}
+        </text>
+      )}
+      <text
+        x={x}
+        y={y + (isCenter ? 38 : 28)}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill={color}
+        fontSize={isCenter ? 9 : 8}
+        fontFamily="monospace"
+        opacity={0.6}
+        letterSpacing={1}
+      >
+        {label.toUpperCase()}
+      </text>
+    </g>
+  );
+}
+
+function ProjectNetworkGraph({ summary }: { summary: DashboardSummary | undefined }) {
+  if (!summary) return null;
+
+  const breakdown = summary.classificationBreakdown;
+  const total = summary.totalProjects;
+
+  const nodes = [
+    { label: "System", count: total, x: 200, y: 110, color: "#f59e0b", isCenter: true },
+    ...breakdown.map((c, i) => {
+      const angle = (i / breakdown.length) * 2 * Math.PI - Math.PI / 2;
+      const r = 75;
+      return {
+        label: c.classification,
+        count: c.count,
+        x: 200 + r * Math.cos(angle),
+        y: 110 + r * Math.sin(angle),
+        color: c.classification === "RESTRICTED" ? "#ef4444" : c.classification === "CONFIDENTIAL" ? "#f59e0b" : "#60a5fa",
+        isCenter: false,
+      };
+    }),
+  ];
+
+  return (
+    <svg
+      viewBox="0 0 400 220"
+      className="w-full h-auto opacity-70"
+      aria-label="Project network graph"
+    >
+      {nodes.slice(1).map((node) => (
+        <line
+          key={node.label}
+          x1={200}
+          y1={110}
+          x2={node.x}
+          y2={node.y}
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth={1}
+          strokeDasharray="3 3"
+        />
+      ))}
+      {nodes.map((node) => (
+        <ProjectNetworkNode key={node.label} {...node} />
+      ))}
+    </svg>
+  );
+}
+
 export function DashboardPage() {
+  const [search, setSearch] = useState("");
+  const [activeClassification, setActiveClassification] = useState("");
+  const [activeTag, setActiveTag] = useState("");
+
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary();
-  const { data: projects, isLoading: isLoadingProjects } = useListProjects();
-  
+  const { data: allProjects, isLoading: isLoadingProjects } = useListProjects();
+  const { data: tags } = useListTags();
+
+  const filteredProjects = useMemo(() => {
+    if (!allProjects) return [];
+    return allProjects.filter((p) => {
+      const matchesSearch =
+        !search ||
+        p.title.toLowerCase().includes(search.toLowerCase()) ||
+        p.summary.toLowerCase().includes(search.toLowerCase()) ||
+        p.techStack.some((t) => t.toLowerCase().includes(search.toLowerCase()));
+      const matchesClass = !activeClassification || p.classification === activeClassification;
+      const matchesTag = !activeTag || p.tags.some((t) => t.slug === activeTag);
+      return matchesSearch && matchesClass && matchesTag;
+    });
+  }, [allProjects, search, activeClassification, activeTag]);
+
+  const classifications = ["RESTRICTED", "CONFIDENTIAL", "UNCLASSIFIED"];
+
   if (isLoadingSummary || isLoadingProjects) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center" data-testid="dashboard-loading">
@@ -34,9 +199,6 @@ export function DashboardPage() {
     );
   }
 
-  const tagCloud = summary?.tagCloud || [];
-  const classificationBreakdown = summary?.classificationBreakdown || [];
-  
   return (
     <div className="min-h-screen pt-20 pb-24" data-testid="dashboard-page">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -47,7 +209,7 @@ export function DashboardPage() {
               COMMAND CENTER ACTIVE
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white/90 mb-4">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white/90 mb-4" data-testid="dashboard-heading">
             DASHBOARD
           </h1>
           <div className="section-line mb-6 max-w-xl" />
@@ -56,54 +218,53 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <motion.div 
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12"
+          className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12"
         >
-          <motion.div variants={itemVariants} className="glass p-6 relative overflow-hidden group">
+          <motion.div variants={itemVariants} className="glass p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-10 -mt-10" />
             <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase mb-4">TOTAL DOSSIERS</div>
-            <div className="text-5xl font-black text-amber-500 mb-2">{summary?.totalProjects || 0}</div>
+            <div className="text-5xl font-black text-amber-500 mb-2" data-testid="stat-total">{summary?.totalProjects || 0}</div>
             <div className="text-xs text-white/40">Records in system</div>
           </motion.div>
-          
-          {classificationBreakdown.map((c) => (
+
+          {summary?.classificationBreakdown.map((c) => (
             <motion.div key={c.classification} variants={itemVariants} className="glass p-6">
               <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase mb-4">
                 {c.classification} FILES
               </div>
-              <div className="text-4xl font-light text-white/80 mb-2">{c.count}</div>
+              <div className="text-4xl font-light text-white/80 mb-2" data-testid={`stat-${c.classification.toLowerCase()}`}>{c.count}</div>
               <div className="text-xs text-white/40">Clearance level</div>
             </motion.div>
           ))}
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="lg:col-span-2 space-y-6"
+            className="lg:col-span-2"
           >
-            <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase flex items-center gap-4">
+            <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase flex items-center gap-4 mb-4">
               <span>FEATURED OPERATIONS</span>
               <div className="section-line flex-1" />
             </div>
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {summary?.featuredProjects?.map((project) => (
                 <Link key={project.id} href={`/projects/${project.slug}`}>
-                  <div className="glass glass-hover p-5 cursor-pointer h-full flex flex-col group">
-                    <div className="flex justify-between items-start mb-4">
+                  <div className="glass glass-hover p-5 cursor-pointer h-full flex flex-col group" data-testid={`featured-project-${project.id}`}>
+                    <div className="flex justify-between items-start mb-3">
                       <ClassificationBadge classification={project.classification} />
                       <span className="text-[9px] mono text-white/30 group-hover:text-amber-500 transition-colors">VIEW</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-white/90 mb-2 group-hover:text-amber-400 transition-colors">
+                    <h3 className="text-base font-semibold text-white/90 mb-2 group-hover:text-amber-400 transition-colors">
                       {project.title}
                     </h3>
-                    <p className="text-sm text-white/45 line-clamp-2 mt-auto">
+                    <p className="text-xs text-white/40 line-clamp-2 mt-auto leading-relaxed">
                       {project.summary}
                     </p>
                   </div>
@@ -112,35 +273,135 @@ export function DashboardPage() {
             </div>
           </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
-            className="space-y-6"
           >
-            <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase flex items-center gap-4">
-              <span>DOMAIN EXPERTISE</span>
+            <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase flex items-center gap-4 mb-4">
+              <span>NETWORK GRAPH</span>
               <div className="section-line flex-1" />
             </div>
-            
-            <div className="glass p-6">
-              <div className="flex flex-wrap gap-2">
-                {tagCloud.map((t) => (
-                  <Link key={t.tag.id} href={`/?tag=${t.tag.slug}`}>
-                    <div className="flex items-center group cursor-pointer border border-white/5 bg-white/5 hover:bg-blue-500/10 hover:border-blue-500/30 transition-colors px-3 py-1.5 rounded-sm">
-                      <span className="text-[10px] mono text-white/60 group-hover:text-blue-400 uppercase tracking-widest mr-2">
-                        {t.tag.name}
-                      </span>
-                      <span className="text-[9px] mono text-amber-500/50 group-hover:text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-sm">
-                        {t.count}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+            <div className="glass p-4" data-testid="network-graph">
+              <ProjectNetworkGraph summary={summary} />
             </div>
           </motion.div>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase flex items-center gap-4 mb-4">
+            <span>ALL DOSSIERS</span>
+            <div className="section-line flex-1" />
+          </div>
+
+          <div className="glass p-4 mb-4 flex flex-col gap-3" data-testid="dashboard-filters">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase shrink-0">SEARCH</span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by title, summary, or stack..."
+                className="flex-1 bg-transparent border-0 outline-none text-sm text-white/70 placeholder:text-white/20 mono"
+                data-testid="input-dashboard-search"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="text-white/30 hover:text-white/60 text-xs mono"
+                  data-testid="button-clear-search"
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
+
+            <div className="h-px bg-white/5" />
+
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-[9px] mono text-white/25 tracking-[0.2em] uppercase mr-1">CLEARANCE</span>
+              <button
+                onClick={() => setActiveClassification("")}
+                className={`text-[9px] mono tracking-[0.15em] uppercase px-2.5 py-1 border transition-colors ${
+                  !activeClassification
+                    ? "border-amber-500/50 text-amber-500 bg-amber-500/10"
+                    : "border-white/10 text-white/35 hover:text-white/60"
+                }`}
+                data-testid="filter-classification-all"
+              >
+                ALL
+              </button>
+              {classifications.map((cls) => (
+                <button
+                  key={cls}
+                  onClick={() => setActiveClassification(cls === activeClassification ? "" : cls)}
+                  className={`text-[9px] mono tracking-[0.15em] uppercase px-2.5 py-1 border transition-colors ${
+                    cls === activeClassification
+                      ? "border-amber-500/50 text-amber-500 bg-amber-500/10"
+                      : "border-white/10 text-white/35 hover:text-white/60"
+                  }`}
+                  data-testid={`filter-classification-${cls.toLowerCase()}`}
+                >
+                  {cls}
+                </button>
+              ))}
+            </div>
+
+            {tags && tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-[9px] mono text-white/25 tracking-[0.2em] uppercase mr-1">DOMAIN</span>
+                <button
+                  onClick={() => setActiveTag("")}
+                  className={`text-[9px] mono tracking-[0.15em] uppercase px-2.5 py-1 border transition-colors ${
+                    !activeTag
+                      ? "border-blue-500/40 text-blue-400 bg-blue-500/10"
+                      : "border-white/10 text-white/35 hover:text-white/60"
+                  }`}
+                  data-testid="filter-tag-all"
+                >
+                  ALL
+                </button>
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => setActiveTag(tag.slug === activeTag ? "" : tag.slug)}
+                    className={`text-[9px] mono tracking-[0.15em] uppercase px-2.5 py-1 border transition-colors ${
+                      tag.slug === activeTag
+                        ? "border-blue-500/40 text-blue-400 bg-blue-500/10"
+                        : "border-white/10 text-white/35 hover:text-white/60"
+                    }`}
+                    data-testid={`filter-tag-${tag.slug}`}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {filteredProjects.length === 0 ? (
+            <div className="glass p-12 text-center" data-testid="dashboard-no-results">
+              <div className="text-[10px] mono text-white/25 tracking-[0.3em] uppercase mb-3">NO RECORDS FOUND</div>
+              <p className="text-white/30 text-sm">Adjust filters or expand search</p>
+            </div>
+          ) : (
+            <motion.div
+              className="flex flex-col gap-2"
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              data-testid="dashboard-project-list"
+            >
+              {filteredProjects.map((project) => (
+                <ProjectRow key={project.id} project={project} />
+              ))}
+            </motion.div>
+          )}
+        </motion.div>
       </div>
     </div>
   );

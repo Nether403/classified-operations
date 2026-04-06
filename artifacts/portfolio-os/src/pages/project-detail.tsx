@@ -1,16 +1,19 @@
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useListProjects, useGetProject, getGetProjectQueryKey } from "@workspace/api-client-react";
+import type { MediaAsset } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export function ProjectDetailPage() {
   const [, params] = useRoute("/projects/:slug");
+  const [, setLocation] = useLocation();
   const slug = params?.slug ?? "";
-  
-  // Need to find the ID first because the endpoint requires an ID
+
   const { data: projects } = useListProjects();
-  const projectId = projects?.find(p => p.slug === slug)?.id;
+  const projectId = projects?.find((p) => p.slug === slug)?.id;
 
   const { data: project, isLoading } = useGetProject(projectId as number, { 
     query: { 
@@ -66,12 +69,21 @@ export function ProjectDetailPage() {
               </button>
             </Link>
 
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <ClassificationBadge classification={project.classification} />
-              <StatusBadge status={project.status} />
-              {project.year && (
-                <span className="text-[10px] mono text-white/25">{project.year}</span>
-              )}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div className="flex flex-wrap items-center gap-3">
+                <ClassificationBadge classification={project.classification} />
+                <StatusBadge status={project.status} />
+                {project.year && (
+                  <span className="text-[10px] mono text-white/25">{project.year}</span>
+                )}
+              </div>
+              <button
+                onClick={() => setLocation(BASE + `/compare?a=${project.id}`)}
+                className="text-[9px] mono text-blue-400/60 border border-blue-500/20 px-3 py-1.5 hover:text-blue-400 hover:border-blue-500/40 transition-colors tracking-widest uppercase"
+                data-testid="btn-compare"
+              >
+                COMPARE
+              </button>
             </div>
 
             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white/90 mb-4">
@@ -162,6 +174,51 @@ export function ProjectDetailPage() {
                   </div>
                 </motion.div>
               ))}
+            </div>
+          )}
+
+          {project.media && project.media.length > 0 && (
+            <div className="mb-12">
+              <div className="text-[10px] mono text-white/25 tracking-[0.2em] uppercase flex items-center gap-4 mb-6">
+                <span>MEDIA ARCHIVE</span>
+                <div className="section-line flex-1" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid="media-section">
+                {(project.media as MediaAsset[]).map((asset, i) => (
+                  <motion.div
+                    key={asset.id}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="glass p-3"
+                    data-testid={`media-asset-${asset.id}`}
+                  >
+                    {asset.type === "image" && asset.url && (
+                      <img
+                        src={asset.url}
+                        alt={asset.altText || asset.caption || "Media asset"}
+                        className="w-full h-48 object-cover opacity-75 mix-blend-screen grayscale mb-3"
+                      />
+                    )}
+                    {asset.type === "video" && asset.url && (
+                      <video
+                        src={asset.url}
+                        controls
+                        className="w-full h-48 object-cover opacity-80 mb-3"
+                      />
+                    )}
+                    <div className="px-1">
+                      <div className="text-[9px] mono text-white/25 tracking-[0.2em] uppercase mb-1">{asset.type}</div>
+                      {asset.altText && (
+                        <div className="text-xs font-medium text-white/65">{asset.altText}</div>
+                      )}
+                      {asset.caption && (
+                        <p className="text-xs text-white/35 mt-1 leading-relaxed">{asset.caption}</p>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           )}
 

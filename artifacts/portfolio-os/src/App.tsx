@@ -1,4 +1,5 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Nav } from "@/components/layout/nav";
 import { Footer } from "@/components/layout/footer";
@@ -20,11 +21,27 @@ const queryClient = new QueryClient({
   },
 });
 
-function Router() {
+function AnimatedRoutes() {
+  const [location] = useLocation();
+  const reducedMotion = useReducedMotion();
+
+  const variants = reducedMotion
+    ? { initial: {}, animate: {}, exit: {} }
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -8 },
+      };
+
   return (
-    <>
-      <Nav />
-      <main>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location}
+        initial={variants.initial}
+        animate={variants.animate}
+        exit={variants.exit}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+      >
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/dashboard" component={DashboardPage} />
@@ -34,6 +51,17 @@ function Router() {
           <Route path="/vault" component={VaultPage} />
           <Route component={NotFoundPage} />
         </Switch>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function Router() {
+  return (
+    <>
+      <Nav />
+      <main>
+        <AnimatedRoutes />
       </main>
       <Footer />
       <CommandPalette />

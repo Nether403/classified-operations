@@ -20,6 +20,9 @@ export function CommandPalette() {
         e.preventDefault();
         setOpen((open) => !open);
       }
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
@@ -39,6 +42,8 @@ export function CommandPalette() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-24 sm:pt-32"
+          onClick={() => setOpen(false)}
+          data-testid="cmdk-backdrop"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -46,6 +51,7 @@ export function CommandPalette() {
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="w-full max-w-2xl px-4"
+            onClick={(e) => e.stopPropagation()}
           >
             <Command
               className="glass overflow-hidden rounded-md border border-white/10 shadow-2xl shadow-amber-500/10 flex flex-col"
