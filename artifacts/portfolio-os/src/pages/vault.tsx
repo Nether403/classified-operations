@@ -128,7 +128,7 @@ export function VaultPage() {
             Authentication required to access classified vault notes. Establish secure session to proceed.
           </p>
           <a
-            href={`${BASE}/api/login`}
+            href={`${BASE}/api/login?returnTo=${encodeURIComponent(window.location.pathname)}`}
             className="inline-block text-[10px] mono tracking-[0.2em] uppercase px-6 py-3 border border-amber-500/30 text-amber-500/70 hover:border-amber-500/60 hover:text-amber-500 transition-colors"
             data-testid="btn-vault-authenticate"
           >

@@ -595,25 +595,8 @@ export function AdminPage() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass p-12 max-w-md w-full mx-6 text-center"
-        >
-          <div className="text-[10px] mono text-red-400/60 tracking-[0.3em] uppercase mb-4">ACCESS DENIED</div>
-          <h2 className="text-xl font-black text-white/80 mb-3">AUTHENTICATION REQUIRED</h2>
-          <p className="text-sm text-white/35 leading-relaxed mb-8">Admin access requires authentication.</p>
-          <a
-            href={`${BASE}/api/login`}
-            className="inline-block text-[10px] mono tracking-[0.2em] uppercase px-6 py-3 border border-amber-500/30 text-amber-500/70 hover:border-amber-500/60 hover:text-amber-500 transition-colors"
-          >
-            AUTHENTICATE
-          </a>
-        </motion.div>
-      </div>
-    );
+    window.location.href = `${BASE}/api/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
+    return null;
   }
 
   if (!isAdmin) {

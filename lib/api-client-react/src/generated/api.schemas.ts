@@ -27,6 +27,7 @@ export interface AuthUser {
 
 export interface GetCurrentAuthUserResponse {
   user: AuthUser | null;
+  isAdmin: boolean;
 }
 
 export interface Tag {

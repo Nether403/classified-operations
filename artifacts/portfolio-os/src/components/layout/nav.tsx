@@ -5,6 +5,11 @@ import { useGetCurrentAuthUser } from "@workspace/api-client-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+function loginUrl(returnTo?: string): string {
+  const to = returnTo ?? window.location.pathname;
+  return `${BASE}/api/login?returnTo=${encodeURIComponent(to)}`;
+}
+
 const navItems = [
   { label: "DOSSIERS", href: "/" },
   { label: "DASHBOARD", href: "/dashboard" },
@@ -18,9 +23,9 @@ export function Nav() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: userResponse } = useGetCurrentAuthUser();
-  const user = (userResponse as { user?: { firstName?: string; email?: string } | null } | undefined)?.user;
+  const user = userResponse?.user;
   const isAuthenticated = !!user;
-  const isAdmin = !!(userResponse as { isAdmin?: boolean } | undefined)?.isAdmin;
+  const isAdmin = !!userResponse?.isAdmin;
 
   const visibleItems = navItems.filter((item) => {
     if ((item as { authRequired?: boolean }).authRequired && !isAuthenticated) return false;
@@ -100,7 +105,7 @@ export function Nav() {
               </div>
             ) : (
               <a
-                href={`${BASE}/api/login`}
+                href={loginUrl()}
                 className="hidden md:inline-block text-[10px] mono text-amber-500/70 hover:text-amber-500 tracking-[0.15em] uppercase transition-colors border border-amber-500/20 hover:border-amber-500/40 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
                 data-testid="btn-login"
               >
@@ -177,7 +182,7 @@ export function Nav() {
                   </div>
                 ) : (
                   <a
-                    href={`${BASE}/api/login`}
+                    href={loginUrl()}
                     className="text-[10px] mono text-amber-500/70 hover:text-amber-500 tracking-[0.15em] uppercase transition-colors border border-amber-500/20 hover:border-amber-500/40 px-3 py-1.5"
                   >
                     ACCESS

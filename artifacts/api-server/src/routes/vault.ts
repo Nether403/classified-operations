@@ -47,11 +47,7 @@ router.get("/vault/notes/:projectId", async (req: Request, res: Response): Promi
   res.json(GetVaultNoteResponse.parse(note));
 });
 
-router.put("/vault/notes/:projectId", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+router.put("/vault/notes/:projectId", requireAdmin, async (req: Request, res: Response): Promise<void> => {
 
   const rawId = req.params.projectId as string;
   const projectId = parseInt(rawId, 10);

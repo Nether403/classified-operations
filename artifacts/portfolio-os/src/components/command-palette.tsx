@@ -16,8 +16,8 @@ export function CommandPalette() {
 
   const { data: projects } = useListProjects({ search });
   const { data: userResponse } = useGetCurrentAuthUser();
-  const isAuthenticated = !!(userResponse as { user?: unknown } | undefined)?.user;
-  const isAdmin = !!(userResponse as { isAdmin?: boolean } | undefined)?.isAdmin;
+  const isAuthenticated = !!userResponse?.user;
+  const isAdmin = !!userResponse?.isAdmin;
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {

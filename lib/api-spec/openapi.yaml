@@ -749,8 +749,11 @@ components:
           oneOf:
             - $ref: "#/components/schemas/AuthUser"
             - type: "null"
+        isAdmin:
+          type: boolean
       required:
         - user
+        - isAdmin
 
     Tag:
       type: object

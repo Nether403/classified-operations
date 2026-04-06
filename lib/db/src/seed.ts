@@ -1,4 +1,4 @@
-import { db, tagsTable, projectsTable, projectTagsTable, projectSectionsTable, mediaAssetsTable } from "./index";
+import { db, tagsTable, projectsTable, projectTagsTable, projectSectionsTable, mediaAssetsTable, vaultNotesTable } from "./index";
 
 async function seed() {
   console.log("Seeding database...");
@@ -370,6 +370,27 @@ async function seed() {
     }
 
     console.log(`Created project: ${project.title}`);
+  }
+
+  const vaultNoteContent: Record<string, string> = {
+    "nexus-intelligence": `CLASSIFICATION: CONFIDENTIAL\n\nINTERNAL NOTES — DO NOT DISTRIBUTE\n\nThe RAG pipeline uses a proprietary graph traversal algorithm that we have not disclosed in any public documentation. The knowledge graph layer was the differentiating technical insight that enabled cross-domain synthesis beyond what pure vector search provides.\n\nPerformance concerns: At scale (>10M documents), the multi-hop traversal becomes O(n log n) per query. We mitigated this with a pre-computed subgraph cache, but this is a known architectural debt item.\n\nThe pharmaceutical client who found the drug interaction has since filed a continuation patent that cites our tool in the prosecution history. Legal has flagged this for review.`,
+    "meridian-grid": `CLASSIFICATION: UNCLASSIFIED\n\nINTERNAL DEPLOYMENT NOTES\n\nThe 31% peak demand reduction figure is an average across all 23 facilities. Two outlier facilities saw 48% and 51% reductions — both had poor baseline energy management. The median reduction is closer to 27%.\n\nThe ML forecasting model retrains nightly on a rolling 90-day window. We discovered in production that weekday vs. weekend patterns diverge significantly when solar generation is a major component. We added a day-type feature that improved forecast accuracy by 11%.\n\nThe facility achieving net-zero during 6 summer months was aided by unusually high solar irradiance that season. The model did not predict this; it was an exogenous factor we now monitor explicitly.`,
+    "obsidian-canvas": `CLASSIFICATION: UNCLASSIFIED\n\nARTISTIC & TECHNICAL NOTES\n\nThe noise field algorithm uses a custom 4D simplex implementation that is 23% faster than the reference implementation due to an optimized gradient table and early exit conditions. This is unpublished.\n\nThe Berlin installation ran for 14 months without a system failure, but there were 3 near-misses: two GPU driver crashes caught by the watchdog process, and one power supply fault that the UPS handled. The "zero failures" claim refers to visitor-facing interruptions, not internal events.\n\nBiometric input (GSR, heart rate) was tested in early prototypes but removed from the final installation after privacy concerns were raised by the museum's ethics review board. The system uses audio and environmental sensors only.`,
+    "cipher-gateway": `CLASSIFICATION: RESTRICTED\n\nSECURITY OPERATIONS NOTES — RESTRICTED ACCESS\n\nThe Trail of Bits audit found no critical findings but did surface 3 medium-severity issues. All were remediated before the audit report was finalized. The public version of the audit summary does not mention these.\n\nThe zk-SNARK circuit has a known trusted setup requirement. The ceremony was conducted with 5 participants using a Powers of Tau setup. If the ceremony is compromised, all proofs generated become invalid but no user data is exposed — this is by design.\n\nTwo of the four DeFi integrations have not yet deployed to mainnet. The $2.1B TVL figure reflects protocols where integration is live. We do not publicize which integrations are in staging.`,
+    "atlas-query": `CLASSIFICATION: CONFIDENTIAL\n\nPRODUCT NOTES — INTERNAL\n\nThe 94.2% query accuracy benchmark was conducted on an internal dataset of 2,400 questions across 6 enterprise schemas. Accuracy drops to approximately 79% on schemas with inconsistent naming conventions and minimal documentation. We are not publishing the benchmark methodology.\n\nOne customer is using Atlas Query to generate reports that are presented to their board without disclosure that the SQL was AI-generated. We have added audit logging to all queries, but this use case raises product liability questions that legal has not resolved.\n\nThe natural language to SQL model is GPT-4 with schema-injection prompting. We are evaluating fine-tuning on customer-specific schemas, but this introduces significant privacy surface area that we have not yet resolved.`,
+    "phantom-protocol": `CLASSIFICATION: RESTRICTED\n\nOPERATIONS NOTES — RESTRICTED ACCESS\n\nThe $47M prevented fraud figure was computed by our fraud model, not independently verified by the financial institutions. The actual prevented fraud may differ; the institutions have their own accounting methodologies that do not align with ours.\n\nThe CRDT consensus algorithm has a known edge case involving network partitions lasting longer than 45 seconds. In this scenario, detection signals can diverge. We have a compensating reconciliation process, but it runs post-hoc and can miss real-time fraud windows. This has not occurred in production.\n\nOne of the three financial institutions has deployed a fork of the detection algorithm for purposes beyond fraud detection. We have no visibility into this use case and the contract does not restrict it. Legal has flagged this for the next renewal negotiation.`,
+  };
+
+  const allProjects = await db.select().from(projectsTable);
+  for (const project of allProjects) {
+    const content = vaultNoteContent[project.slug];
+    if (content) {
+      await db
+        .insert(vaultNotesTable)
+        .values({ projectId: project.id, content })
+        .onConflictDoNothing();
+      console.log(`Vault note upserted for: ${project.slug}`);
+    }
   }
 
   console.log("Seed complete.");
