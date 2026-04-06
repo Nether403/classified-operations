@@ -3,13 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Portfolio OS API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: projects
+    description: Project operations
+  - name: sections
+    description: Project section operations
+  - name: tags
+    description: Tag operations
+  - name: media
+    description: Media asset operations
+  - name: operator
+    description: AI operator operations
+  - name: vault
+    description: Vault note operations
+  - name: admin
+    description: Admin operations
+  - name: dashboard
+    description: Dashboard summary operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +43,592 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
+      tags: [auth]
+      summary: Get current user
+      description: Returns current authenticated user or null
+      responses:
+        "200":
+          description: Current auth state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List projects
+      description: List all public projects, optionally filtered
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: classification
+          in: query
+          schema:
+            type: string
+        - name: isPublic
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create project
+      description: Create a new project (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get project
+      description: Get a single project by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update project
+      description: Update an existing project (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectBody"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete project
+      description: Delete a project (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects/{id}/sections:
+    get:
+      operationId: listProjectSections
+      tags: [sections]
+      summary: List project sections
+      description: Get all sections for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectSection"
+    post:
+      operationId: createProjectSection
+      tags: [sections]
+      summary: Create project section
+      description: Add a section to a project (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSectionBody"
+      responses:
+        "201":
+          description: Created section
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSection"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects/{id}/sections/{sectionId}:
+    patch:
+      operationId: updateProjectSection
+      tags: [sections]
+      summary: Update project section
+      description: Update a project section (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSectionBody"
+      responses:
+        "200":
+          description: Updated section
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSection"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteProjectSection
+      tags: [sections]
+      summary: Delete project section
+      description: Delete a project section (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tags:
+    get:
+      operationId: listTags
+      tags: [tags]
+      summary: List all tags
+      description: Get all available tags
+      responses:
+        "200":
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+    post:
+      operationId: createTag
+      tags: [tags]
+      summary: Create tag
+      description: Create a new tag (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTagBody"
+      responses:
+        "201":
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects/{id}/media:
+    get:
+      operationId: listProjectMedia
+      tags: [media]
+      summary: List project media
+      description: Get all media assets for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of media assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaAsset"
+    post:
+      operationId: createProjectMedia
+      tags: [media]
+      summary: Add media asset
+      description: Add a media asset to a project (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMediaBody"
+      responses:
+        "201":
+          description: Created media asset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAsset"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mobile-auth/token-exchange:
+    post:
+      operationId: exchangeMobileAuthorizationCode
+      tags: [auth]
+      summary: Exchange mobile authorization code
+      description: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExchangeMobileAuthorizationCodeBody"
+      responses:
+        "200":
+          description: Session token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExchangeMobileAuthorizationCodeResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mobile-auth/logout:
+    post:
+      operationId: logoutMobileSession
+      tags: [auth]
+      summary: Mobile logout
+      description: Delete a mobile session token
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutMobileSessionResponse"
+
+  /operator/chat:
+    post:
+      operationId: operatorChat
+      tags: [operator]
+      summary: Chat with AI operator
+      description: Send a message to the AI operator and receive a grounded response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperatorChatBody"
+      responses:
+        "200":
+          description: Operator response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorChatResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /operator/conversations:
+    get:
+      operationId: listOperatorConversations
+      tags: [operator]
+      summary: List operator conversations
+      description: Get recent operator conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OperatorConversation"
+
+  /vault/notes:
+    get:
+      operationId: listVaultNotes
+      tags: [vault]
+      summary: List vault notes
+      description: Get all vault notes (authenticated only)
+      responses:
+        "200":
+          description: List of vault notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VaultNote"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /vault/notes/{projectId}:
+    get:
+      operationId: getVaultNote
+      tags: [vault]
+      summary: Get vault note for project
+      description: Get vault note for a specific project (authenticated only)
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vault note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaultNote"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: upsertVaultNote
+      tags: [vault]
+      summary: Upsert vault note
+      description: Create or update a vault note for a project (admin only)
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertVaultNoteBody"
+      responses:
+        "200":
+          description: Upserted vault note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VaultNote"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/projects:
+    get:
+      operationId: adminListProjects
+      tags: [admin]
+      summary: Admin list projects
+      description: List all projects including private (admin only)
+      responses:
+        "200":
+          description: All projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary
+      description: Get aggregated stats and featured projects for the command center
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +639,561 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: ["string", "null"]
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+      required:
+        - id
+
+    GetCurrentAuthUserResponse:
+      type: object
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+      required:
+        - user
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - slug
+        - createdAt
+
+    CreateTagBody:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: ["string", "null"]
+      required:
+        - name
+        - slug
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        summary:
+          type: string
+        classification:
+          type: string
+        status:
+          type: string
+        year:
+          type: ["integer", "null"]
+        isPublic:
+          type: boolean
+        isFeatured:
+          type: boolean
+        techStack:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        coverImageUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - slug
+        - summary
+        - classification
+        - status
+        - isPublic
+        - isFeatured
+        - techStack
+        - tags
+        - createdAt
+        - updatedAt
+
+    ProjectSection:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - type
+        - title
+        - content
+        - sortOrder
+        - createdAt
+
+    ProjectDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        summary:
+          type: string
+        classification:
+          type: string
+        status:
+          type: string
+        year:
+          type: ["integer", "null"]
+        isPublic:
+          type: boolean
+        isFeatured:
+          type: boolean
+        techStack:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectSection"
+        media:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaAsset"
+        relatedProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        coverImageUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - slug
+        - summary
+        - classification
+        - status
+        - isPublic
+        - isFeatured
+        - techStack
+        - tags
+        - sections
+        - media
+        - relatedProjects
+        - createdAt
+        - updatedAt
+
+    CreateProjectBody:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        summary:
+          type: string
+        classification:
+          type: string
+        status:
+          type: string
+        year:
+          type: ["integer", "null"]
+        isPublic:
+          type: boolean
+        isFeatured:
+          type: boolean
+        techStack:
+          type: array
+          items:
+            type: string
+        tagIds:
+          type: array
+          items:
+            type: integer
+        coverImageUrl:
+          type: ["string", "null"]
+      required:
+        - title
+        - slug
+        - summary
+        - classification
+        - status
+
+    UpdateProjectBody:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        summary:
+          type: string
+        classification:
+          type: string
+        status:
+          type: string
+        year:
+          type: ["integer", "null"]
+        isPublic:
+          type: boolean
+        isFeatured:
+          type: boolean
+        techStack:
+          type: array
+          items:
+            type: string
+        tagIds:
+          type: array
+          items:
+            type: integer
+        coverImageUrl:
+          type: ["string", "null"]
+
+    CreateSectionBody:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        sortOrder:
+          type: integer
+      required:
+        - type
+        - title
+        - content
+        - sortOrder
+
+    UpdateSectionBody:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        sortOrder:
+          type: integer
+
+    MediaAsset:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        type:
+          type: string
+        url:
+          type: string
+        caption:
+          type: ["string", "null"]
+        altText:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - type
+        - url
+        - sortOrder
+        - createdAt
+
+    CreateMediaBody:
+      type: object
+      properties:
+        type:
+          type: string
+        url:
+          type: string
+        caption:
+          type: ["string", "null"]
+        altText:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+      required:
+        - type
+        - url
+        - sortOrder
+
+    OperatorChatBody:
+      type: object
+      properties:
+        message:
+          type: string
+        conversationId:
+          type: ["string", "null"]
+      required:
+        - message
+
+    ProjectCitation:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+      required:
+        - projectId
+        - title
+        - slug
+
+    TourStop:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        rationale:
+          type: string
+      required:
+        - projectId
+        - title
+        - slug
+        - rationale
+
+    OperatorChatResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        conversationId:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectCitation"
+        tour:
+          type: array
+          items:
+            $ref: "#/components/schemas/TourStop"
+      required:
+        - message
+        - conversationId
+        - citations
+
+    OperatorConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: string
+        role:
+          type: string
+        message:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectCitation"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - message
+        - citations
+        - createdAt
+
+    VaultNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - content
+        - createdAt
+        - updatedAt
+
+    ExchangeMobileAuthorizationCodeBody:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: string
+          minLength: 1
+      required:
+        - code
+        - code_verifier
+        - redirect_uri
+        - state
+
+    ExchangeMobileAuthorizationCodeResponse:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    LogoutMobileSessionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    UpsertVaultNoteBody:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+        featuredProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        recentProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        tagCloud:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+        classificationBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClassificationCount"
+      required:
+        - totalProjects
+        - featuredProjects
+        - recentProjects
+        - tagCloud
+        - classificationBreakdown
+
+    TagCount:
+      type: object
+      properties:
+        tag:
+          $ref: "#/components/schemas/Tag"
+        count:
+          type: integer
+      required:
+        - tag
+        - count
+
+    ClassificationCount:
+      type: object
+      properties:
+        classification:
+          type: string
+        count:
+          type: integer
+      required:
+        - classification
+        - count
