@@ -251,6 +251,13 @@ export interface DashboardSummary {
   classificationBreakdown: ClassificationCount[];
 }
 
+export type LoginParams = {
+  /**
+   * Path to redirect to after login
+   */
+  returnTo?: string;
+};
+
 export type ListProjectsParams = {
   tag?: string;
   search?: string;

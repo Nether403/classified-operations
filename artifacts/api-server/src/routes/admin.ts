@@ -5,6 +5,13 @@ import { AdminListProjectsResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
+function isAdmin(req: Request): boolean {
+  if (!req.isAuthenticated()) return false;
+  const adminUserId = process.env.ADMIN_USER_ID;
+  if (adminUserId && req.user?.id !== adminUserId) return false;
+  return true;
+}
+
 async function getProjectWithTags(projectId: number) {
   const project = await db.query.projectsTable.findFirst({
     where: eq(projectsTable.id, projectId),
@@ -23,6 +30,10 @@ async function getProjectWithTags(projectId: number) {
 router.get("/admin/projects", async (req: Request, res: Response): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!isAdmin(req)) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 

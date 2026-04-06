@@ -28,6 +28,7 @@ import type {
   GetCurrentAuthUserResponse,
   HealthStatus,
   ListProjectsParams,
+  LoginParams,
   LogoutMobileSessionResponse,
   MediaAsset,
   OperatorChatBody,
@@ -133,7 +134,7 @@ export function useHealthCheck<
  * @summary Get current user
  */
 export const getGetCurrentAuthUserUrl = () => {
-  return `/api/auth/user`;
+  return `/api/auth/me`;
 };
 
 export const getCurrentAuthUser = async (
@@ -146,7 +147,7 @@ export const getCurrentAuthUser = async (
 };
 
 export const getGetCurrentAuthUserQueryKey = () => {
-  return [`/api/auth/user`] as const;
+  return [`/api/auth/me`] as const;
 };
 
 export const getGetCurrentAuthUserQueryOptions = <
@@ -196,6 +197,229 @@ export function useGetCurrentAuthUser<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetCurrentAuthUserQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Redirects to the OIDC provider to initiate the login flow
+ * @summary Initiate login
+ */
+export const getLoginUrl = (params?: LoginParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/login?${stringifiedParams}`
+    : `/api/login`;
+};
+
+export const login = async (
+  params?: LoginParams,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getLoginUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getLoginQueryKey = (params?: LoginParams) => {
+  return [`/api/login`, ...(params ? [params] : [])] as const;
+};
+
+export const getLoginQueryOptions = <
+  TData = Awaited<ReturnType<typeof login>>,
+  TError = ErrorType<void>,
+>(
+  params?: LoginParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof login>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getLoginQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof login>>> = ({
+    signal,
+  }) => login(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof login>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type LoginQueryResult = NonNullable<Awaited<ReturnType<typeof login>>>;
+export type LoginQueryError = ErrorType<void>;
+
+/**
+ * @summary Initiate login
+ */
+
+export function useLogin<
+  TData = Awaited<ReturnType<typeof login>>,
+  TError = ErrorType<void>,
+>(
+  params?: LoginParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof login>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getLoginQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Handles the OIDC provider callback after login
+ * @summary OIDC callback
+ */
+export const getAuthCallbackUrl = () => {
+  return `/api/callback`;
+};
+
+export const authCallback = async (options?: RequestInit): Promise<unknown> => {
+  return customFetch<unknown>(getAuthCallbackUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAuthCallbackQueryKey = () => {
+  return [`/api/callback`] as const;
+};
+
+export const getAuthCallbackQueryOptions = <
+  TData = Awaited<ReturnType<typeof authCallback>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof authCallback>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAuthCallbackQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof authCallback>>> = ({
+    signal,
+  }) => authCallback({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof authCallback>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AuthCallbackQueryResult = NonNullable<
+  Awaited<ReturnType<typeof authCallback>>
+>;
+export type AuthCallbackQueryError = ErrorType<void>;
+
+/**
+ * @summary OIDC callback
+ */
+
+export function useAuthCallback<
+  TData = Awaited<ReturnType<typeof authCallback>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof authCallback>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAuthCallbackQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Clears session and redirects to the OIDC provider end session URL
+ * @summary Logout
+ */
+export const getLogoutUrl = () => {
+  return `/api/logout`;
+};
+
+export const logout = async (options?: RequestInit): Promise<unknown> => {
+  return customFetch<unknown>(getLogoutUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getLogoutQueryKey = () => {
+  return [`/api/logout`] as const;
+};
+
+export const getLogoutQueryOptions = <
+  TData = Awaited<ReturnType<typeof logout>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof logout>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getLogoutQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof logout>>> = ({
+    signal,
+  }) => logout({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof logout>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type LogoutQueryResult = NonNullable<Awaited<ReturnType<typeof logout>>>;
+export type LogoutQueryError = ErrorType<void>;
+
+/**
+ * @summary Logout
+ */
+
+export function useLogout<
+  TData = Awaited<ReturnType<typeof logout>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof logout>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getLogoutQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

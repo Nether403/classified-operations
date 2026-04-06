@@ -158,13 +158,23 @@ router.post("/projects", async (req: Request, res: Response): Promise<void> => {
 
 router.get("/projects/:id", async (req: Request, res: Response): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const id = parseInt(rawId, 10);
-  if (isNaN(id)) {
-    res.status(400).json({ error: "Invalid project id" });
-    return;
+  const numericId = parseInt(rawId, 10);
+
+  let projectId: number;
+  if (!isNaN(numericId)) {
+    projectId = numericId;
+  } else {
+    const bySlug = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.slug, rawId),
+    });
+    if (!bySlug) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    projectId = bySlug.id;
   }
 
-  const project = await getProjectDetail(id);
+  const project = await getProjectDetail(projectId);
   if (!project) {
     res.status(404).json({ error: "Project not found" });
     return;

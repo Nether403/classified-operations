@@ -16,7 +16,7 @@ interface AuthState {
 export function useAuth() {
   const { data, isLoading } = useQuery<AuthState>({
     queryKey: ["auth-user"],
-    queryFn: () => apiFetch<AuthState>("/auth/user"),
+    queryFn: () => apiFetch<AuthState>("/auth/me"),
     staleTime: 60_000,
     retry: false,
   });

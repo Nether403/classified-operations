@@ -44,7 +44,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
-  /auth/user:
+  /auth/me:
     get:
       operationId: getCurrentAuthUser
       tags: [auth]
@@ -57,6 +57,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+
+  /login:
+    get:
+      operationId: login
+      tags: [auth]
+      summary: Initiate login
+      description: Redirects to the OIDC provider to initiate the login flow
+      parameters:
+        - name: returnTo
+          in: query
+          schema:
+            type: string
+          description: Path to redirect to after login
+      responses:
+        "302":
+          description: Redirect to OIDC provider
+
+  /callback:
+    get:
+      operationId: authCallback
+      tags: [auth]
+      summary: OIDC callback
+      description: Handles the OIDC provider callback after login
+      responses:
+        "302":
+          description: Redirect to returnTo path or home
+
+  /logout:
+    get:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      description: Clears session and redirects to the OIDC provider end session URL
+      responses:
+        "302":
+          description: Redirect to OIDC end session URL
 
   /projects:
     get:

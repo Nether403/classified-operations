@@ -33,6 +33,17 @@ export const GetCurrentAuthUserResponse = zod.object({
 });
 
 /**
+ * Redirects to the OIDC provider to initiate the login flow
+ * @summary Initiate login
+ */
+export const LoginQueryParams = zod.object({
+  returnTo: zod.coerce
+    .string()
+    .optional()
+    .describe("Path to redirect to after login"),
+});
+
+/**
  * List all public projects, optionally filtered
  * @summary List projects
  */
