@@ -71,6 +71,7 @@ export type MediaAsset = typeof mediaAssetsTable.$inferSelect;
 export const operatorConversationsTable = pgTable("operator_conversations", {
   id: serial("id").primaryKey(),
   conversationId: text("conversation_id").notNull(),
+  userId: text("user_id"),
   role: text("role").notNull(),
   message: text("message").notNull(),
   citations: jsonb("citations").notNull().default([]),

@@ -19,10 +19,12 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
 
   const { message, conversationId: incomingId } = parsed.data;
   const conversationId = incomingId ?? randomUUID();
+  const userId = req.isAuthenticated() ? req.user?.id : null;
 
   try {
     await db.insert(operatorConversationsTable).values({
       conversationId,
+      userId: userId ?? null,
       role: "user",
       message,
       citations: [],
@@ -38,6 +40,7 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
   try {
     await db.insert(operatorConversationsTable).values({
       conversationId,
+      userId: userId ?? null,
       role: "assistant",
       message: stubMessage,
       citations: [],
@@ -61,9 +64,11 @@ router.get("/operator/conversations", async (req: Request, res: Response): Promi
     return;
   }
 
+  const userId = req.user?.id;
   const conversations = await db
     .select()
     .from(operatorConversationsTable)
+    .where(eq(operatorConversationsTable.userId, userId!))
     .orderBy(operatorConversationsTable.createdAt);
 
   res.json(ListOperatorConversationsResponse.parse(conversations));

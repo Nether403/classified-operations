@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { requireAdmin } from "../middlewares/requireAdmin";
+import { requireAdmin, isAdmin } from "../middlewares/requireAdmin";
 import { eq, inArray, sql, and } from "drizzle-orm";
 import {
   db,
@@ -90,7 +90,7 @@ router.get("/projects", async (req: Request, res: Response): Promise<void> => {
 
   let projects = await db.select().from(projectsTable);
 
-  if (!req.isAuthenticated()) {
+  if (!isAdmin(req)) {
     projects = projects.filter((p) => p.isPublic);
   }
 
@@ -176,7 +176,7 @@ router.get("/projects/:id", async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  if (!project.isPublic && !req.isAuthenticated()) {
+  if (!project.isPublic && !isAdmin(req)) {
     res.status(404).json({ error: "Project not found" });
     return;
   }
