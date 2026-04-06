@@ -13,6 +13,7 @@ import { NotFoundPage } from "@/pages/not-found";
 import { CommandPalette } from "@/components/command-palette";
 import { OperatorProvider } from "@/store/operator-store";
 import { OperatorPanel } from "@/components/operator-panel";
+import { AdminPage } from "@/pages/admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function AnimatedRoutes() {
           <Route path="/compare" component={ComparePage} />
           <Route path="/operator" component={OperatorPage} />
           <Route path="/vault" component={VaultPage} />
+          <Route path="/admin" component={AdminPage} />
           <Route component={NotFoundPage} />
         </Switch>
       </motion.div>

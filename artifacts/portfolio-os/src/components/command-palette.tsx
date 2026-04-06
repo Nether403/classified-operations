@@ -1,18 +1,23 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Command } from "cmdk";
-import { Search, FolderGit2, Home, BarChart2, GitCompare, Command as CmdIcon } from "lucide-react";
+import { Search, FolderGit2, Home, BarChart2, GitCompare, Shield, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useListProjects } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
+import { useGetCurrentAuthUser } from "@workspace/api-client-react";
+import { useOpenOperator } from "@/components/operator-panel";
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [, setLocation] = useLocation();
+  const { openPanel } = useOpenOperator();
 
-  // Load basic info for fast search
   const { data: projects } = useListProjects({ search });
+  const { data: userResponse } = useGetCurrentAuthUser();
+  const isAuthenticated = !!(userResponse as { user?: unknown } | undefined)?.user;
+  const isAdmin = !!(userResponse as { isAdmin?: boolean } | undefined)?.isAdmin;
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -72,7 +77,7 @@ export function CommandPalette() {
                 </div>
               </div>
 
-              <Command.List className="max-h-[300px] overflow-y-auto p-2 scrollbar-thin">
+              <Command.List className="max-h-[360px] overflow-y-auto p-2 scrollbar-thin">
                 <Command.Empty className="py-6 text-center text-sm mono text-white/30" data-testid="cmdk-empty">
                   NO DIRECTIVES FOUND.
                 </Command.Empty>
@@ -84,7 +89,7 @@ export function CommandPalette() {
                     data-testid="cmdk-item-home"
                   >
                     <Home className="w-4 h-4 text-white/40 group-aria-selected:text-amber-500" />
-                    <span className="mono">Return to Base / Dosiers</span>
+                    <span className="mono">Return to Base / Dossiers</span>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => runCommand(() => setLocation("/dashboard"))}
@@ -102,7 +107,40 @@ export function CommandPalette() {
                     <GitCompare className="w-4 h-4 text-white/40 group-aria-selected:text-amber-500" />
                     <span className="mono">Intelligence Comparison</span>
                   </Command.Item>
+                  <Command.Item
+                    onSelect={() => runCommand(() => openPanel())}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer aria-selected:bg-white/5 aria-selected:text-amber-400 text-white/70 text-sm transition-colors group"
+                    data-testid="cmdk-item-operator"
+                  >
+                    <span className="w-4 h-4 flex items-center justify-center text-[9px] mono text-blue-400/60 group-aria-selected:text-blue-400 border border-blue-400/20 group-aria-selected:border-blue-400/40">AI</span>
+                    <span className="mono">Open AI Operator</span>
+                  </Command.Item>
                 </Command.Group>
+
+                {isAuthenticated && (
+                  <Command.Group heading="SECURE ACCESS" className="text-[10px] mono text-white/40 px-2 py-2 mt-2">
+                    <Command.Item
+                      onSelect={() => runCommand(() => setLocation("/vault"))}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer aria-selected:bg-white/5 aria-selected:text-amber-400 text-white/70 text-sm transition-colors group"
+                      data-testid="cmdk-item-vault"
+                    >
+                      <Shield className="w-4 h-4 text-amber-500/40 group-aria-selected:text-amber-500" />
+                      <span className="mono">Classified Vault</span>
+                      <span className="ml-auto text-[8px] mono text-amber-500/40 border border-amber-500/20 px-1.5 py-0.5">AUTHORIZED</span>
+                    </Command.Item>
+                    {isAdmin && (
+                      <Command.Item
+                        onSelect={() => runCommand(() => setLocation("/admin"))}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer aria-selected:bg-white/5 aria-selected:text-amber-400 text-white/70 text-sm transition-colors group"
+                        data-testid="cmdk-item-admin"
+                      >
+                        <Settings className="w-4 h-4 text-red-400/40 group-aria-selected:text-red-400" />
+                        <span className="mono">Admin Interface</span>
+                        <span className="ml-auto text-[8px] mono text-red-400/40 border border-red-400/20 px-1.5 py-0.5">ADMIN</span>
+                      </Command.Item>
+                    )}
+                  </Command.Group>
+                )}
 
                 {projects && projects.length > 0 && (
                   <Command.Group heading="DOSSIERS" className="text-[10px] mono text-white/40 px-2 py-2 mt-2">

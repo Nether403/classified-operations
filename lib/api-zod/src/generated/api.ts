@@ -30,6 +30,7 @@ export const GetCurrentAuthUserResponse = zod.object({
     }),
     zod.null(),
   ]),
+  isAdmin: zod.boolean().optional(),
 });
 
 /**

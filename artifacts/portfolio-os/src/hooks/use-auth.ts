@@ -11,6 +11,7 @@ interface AuthUser {
 
 interface AuthState {
   user: AuthUser | null;
+  isAdmin?: boolean;
 }
 
 export function useAuth() {
@@ -24,6 +25,7 @@ export function useAuth() {
   return {
     user: data?.user ?? null,
     isAuthenticated: !!data?.user,
+    isAdmin: data?.isAdmin ?? false,
     isLoading,
   };
 }
