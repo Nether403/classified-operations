@@ -153,7 +153,7 @@ router.post("/projects", requireAdmin, async (req: Request, res: Response): Prom
 });
 
 router.get("/projects/:id", async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawId = req.params.id as string;
   const numericId = parseInt(rawId, 10);
 
   let projectId: number;
@@ -185,7 +185,7 @@ router.get("/projects/:id", async (req: Request, res: Response): Promise<void> =
 });
 
 router.patch("/projects/:id", requireAdmin, async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawId = req.params.id as string;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid project id" });
@@ -225,7 +225,7 @@ router.patch("/projects/:id", requireAdmin, async (req: Request, res: Response):
 });
 
 router.delete("/projects/:id", requireAdmin, async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawId = req.params.id as string;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid project id" });
@@ -246,7 +246,7 @@ router.delete("/projects/:id", requireAdmin, async (req: Request, res: Response)
 });
 
 router.get("/projects/:id/sections", async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawId = req.params.id as string;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid project id" });
@@ -263,7 +263,7 @@ router.get("/projects/:id/sections", async (req: Request, res: Response): Promis
 });
 
 router.post("/projects/:id/sections", requireAdmin, async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawId = req.params.id as string;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid project id" });
@@ -285,7 +285,7 @@ router.post("/projects/:id/sections", requireAdmin, async (req: Request, res: Re
 });
 
 router.patch("/projects/:id/sections/:sectionId", requireAdmin, async (req: Request, res: Response): Promise<void> => {
-  const rawSectionId = Array.isArray(req.params.sectionId) ? req.params.sectionId[0] : req.params.sectionId;
+  const rawSectionId = req.params.sectionId as string;
   const sectionId = parseInt(rawSectionId, 10);
   if (isNaN(sectionId)) {
     res.status(400).json({ error: "Invalid section id" });
@@ -313,7 +313,7 @@ router.patch("/projects/:id/sections/:sectionId", requireAdmin, async (req: Requ
 });
 
 router.delete("/projects/:id/sections/:sectionId", requireAdmin, async (req: Request, res: Response): Promise<void> => {
-  const rawSectionId = Array.isArray(req.params.sectionId) ? req.params.sectionId[0] : req.params.sectionId;
+  const rawSectionId = req.params.sectionId as string;
   const sectionId = parseInt(rawSectionId, 10);
   if (isNaN(sectionId)) {
     res.status(400).json({ error: "Invalid section id" });

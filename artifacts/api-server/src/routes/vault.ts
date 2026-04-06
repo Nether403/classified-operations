@@ -27,7 +27,7 @@ router.get("/vault/notes/:projectId", async (req: Request, res: Response): Promi
     return;
   }
 
-  const rawId = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
+  const rawId = req.params.projectId as string;
   const projectId = parseInt(rawId, 10);
   if (isNaN(projectId)) {
     res.status(400).json({ error: "Invalid project id" });
@@ -53,7 +53,7 @@ router.put("/vault/notes/:projectId", async (req: Request, res: Response): Promi
     return;
   }
 
-  const rawId = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
+  const rawId = req.params.projectId as string;
   const projectId = parseInt(rawId, 10);
   if (isNaN(projectId)) {
     res.status(400).json({ error: "Invalid project id" });
@@ -79,7 +79,7 @@ router.put("/vault/notes/:projectId", async (req: Request, res: Response): Promi
 });
 
 router.delete("/vault/notes/:projectId", requireAdmin, async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
+  const rawId = req.params.projectId as string;
   const projectId = parseInt(rawId, 10);
   if (isNaN(projectId)) {
     res.status(400).json({ error: "Invalid project id" });

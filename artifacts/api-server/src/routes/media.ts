@@ -11,7 +11,7 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 const router: IRouter = Router();
 
 router.get("/projects/:id/media", async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawId = req.params.id as string;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid project id" });
@@ -28,7 +28,7 @@ router.get("/projects/:id/media", async (req: Request, res: Response): Promise<v
 });
 
 router.post("/projects/:id/media", requireAdmin, async (req: Request, res: Response): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawId = req.params.id as string;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid project id" });
