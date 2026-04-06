@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, inArray, and } from "drizzle-orm";
+import { eq, inArray, and, isNull } from "drizzle-orm";
 import {
   db,
   operatorConversationsTable,
@@ -159,7 +159,7 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
             eq(operatorConversationsTable.conversationId, conversationId),
             userId
               ? eq(operatorConversationsTable.userId, userId)
-              : eq(operatorConversationsTable.userId, "anonymous"),
+              : isNull(operatorConversationsTable.userId),
           ),
         )
         .orderBy(operatorConversationsTable.createdAt)

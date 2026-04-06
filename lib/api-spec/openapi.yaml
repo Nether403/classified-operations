@@ -507,8 +507,13 @@ paths:
     post:
       operationId: operatorChat
       tags: [operator]
-      summary: Chat with AI operator
-      description: Send a message to the AI operator and receive a grounded response
+      summary: Chat with AI operator (SSE streaming)
+      description: >
+        Send a message to the AI operator and receive a Server-Sent Events (SSE) stream.
+        Each SSE event is a JSON-encoded OperatorChunkEvent. The final event has done=true
+        and includes the full parsed citations and optional tour. Clients must read this
+        endpoint with a streaming fetch and an EventSource-compatible reader — NOT with
+        the generated JSON client hook (use custom fetch instead).
       requestBody:
         required: true
         content:
@@ -517,11 +522,17 @@ paths:
               $ref: "#/components/schemas/OperatorChatBody"
       responses:
         "200":
-          description: Operator response
+          description: SSE stream of operator response chunks
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/OperatorChunkEvent"
+        "400":
+          description: Invalid request body
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OperatorChatResponse"
+                $ref: "#/components/schemas/ErrorResponse"
         "500":
           description: Internal error
           content:
@@ -1102,6 +1113,9 @@ components:
 
     OperatorChatResponse:
       type: object
+      description: >
+        Legacy schema retained for Zod/client consumers. The actual endpoint
+        returns text/event-stream (SSE) — see OperatorChunkEvent for the wire format.
       properties:
         message:
           type: string
@@ -1119,6 +1133,39 @@ components:
         - message
         - conversationId
         - citations
+
+    OperatorChunkEvent:
+      type: object
+      description: >
+        A single SSE event emitted by POST /operator/chat. Clients should read the
+        event stream and accumulate `chunk` text until `done` is true, then parse
+        `citations` and `tour` from the final event.
+      properties:
+        chunk:
+          type: string
+          description: Incremental text fragment (empty string on final done event)
+        done:
+          type: boolean
+          description: True on the last event — signals the stream is complete
+        conversationId:
+          type: string
+          description: The conversation ID to pass on subsequent turns (present on final event)
+        citations:
+          type: array
+          description: Parsed citation references (present on final event only)
+          items:
+            $ref: "#/components/schemas/ProjectCitation"
+        tour:
+          type: array
+          description: Ordered tour stops (present on final event only, if applicable)
+          items:
+            $ref: "#/components/schemas/TourStop"
+        error:
+          type: string
+          description: Error message (present only if streaming failed)
+      required:
+        - chunk
+        - done
 
     OperatorConversation:
       type: object
