@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,6 +6,58 @@ import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function useFocusTrap(active: boolean, onEscape: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!ref.current) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onEscape();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const focusable = Array.from(
+        ref.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.closest("[aria-hidden]"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    },
+    [onEscape]
+  );
+
+  useEffect(() => {
+    if (!active) return;
+    const prevFocus = document.activeElement as HTMLElement | null;
+    const firstFocusable = ref.current?.querySelector<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    firstFocusable?.focus();
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      prevFocus?.focus();
+    };
+  }, [active, handleKeyDown]);
+
+  return ref;
+}
 
 interface Tag {
   id: number;
@@ -63,6 +115,7 @@ function SectionsEditor({
   projectId: number;
   onClose: () => void;
 }) {
+  const trapRef = useFocusTrap(true, onClose);
   const qc = useQueryClient();
   const { data: sections = [], isLoading } = useQuery<Section[]>({
     queryKey: ["sections", projectId],
@@ -109,11 +162,18 @@ function SectionsEditor({
   });
 
   return (
-    <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-16 px-4 overflow-y-auto" data-testid="sections-editor-modal">
+    <div
+      className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-16 px-4 overflow-y-auto"
+      data-testid="sections-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sections Editor"
+      ref={trapRef}
+    >
       <div className="glass w-full max-w-2xl mb-16">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8">
           <span className="text-[10px] mono text-white/50 tracking-[0.2em] uppercase">SECTIONS EDITOR</span>
-          <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors text-xs mono">CLOSE</button>
+          <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors text-xs mono" aria-label="Close sections editor">CLOSE</button>
         </div>
 
         {isLoading ? (
@@ -222,6 +282,7 @@ function VaultNoteEditor({
   projectTitle: string;
   onClose: () => void;
 }) {
+  const trapRef = useFocusTrap(true, onClose);
   const qc = useQueryClient();
   const { data: note } = useQuery<VaultNote | null>({
     queryKey: ["vault-note", projectId],
@@ -253,14 +314,21 @@ function VaultNoteEditor({
   });
 
   return (
-    <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center px-4" data-testid="vault-note-editor-modal">
+    <div
+      className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center px-4"
+      data-testid="vault-note-editor-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Vault Note: ${projectTitle}`}
+      ref={trapRef}
+    >
       <div className="glass w-full max-w-2xl">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8">
           <div>
             <span className="text-[10px] mono text-amber-500/50 tracking-[0.2em] uppercase">VAULT NOTE</span>
             <div className="text-xs text-white/50 mt-0.5">{projectTitle}</div>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors text-xs mono">CLOSE</button>
+          <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors text-xs mono" aria-label="Close vault note editor">CLOSE</button>
         </div>
         <div className="p-5">
           <textarea
@@ -305,6 +373,7 @@ function ProjectForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const trapRef = useFocusTrap(true, onClose);
   const [title, setTitle] = useState(project?.title ?? "");
   const [slug, setSlug] = useState(project?.slug ?? "");
   const [summary, setSummary] = useState(project?.summary ?? "");
@@ -370,7 +439,14 @@ function ProjectForm({
   };
 
   return (
-    <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-12 px-4 overflow-y-auto" data-testid="project-form-modal">
+    <div
+      className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-12 px-4 overflow-y-auto"
+      data-testid="project-form-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label={project ? `Edit project: ${project.title}` : "New Project"}
+      ref={trapRef}
+    >
       <form onSubmit={(e) => void handleSubmit(e)} className="glass w-full max-w-2xl mb-12">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8">
           <span className="text-[10px] mono text-white/50 tracking-[0.2em] uppercase">
@@ -486,28 +562,32 @@ function ProjectForm({
           </div>
 
           <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <div
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
                 onClick={() => setIsPublic(!isPublic)}
-                className={`w-8 h-4 rounded-full transition-colors relative ${isPublic ? "bg-blue-500/40" : "bg-white/10"}`}
-                role="checkbox"
+                role="switch"
                 aria-checked={isPublic}
+                aria-label="Toggle public visibility"
+                className={`w-8 h-4 rounded-full transition-colors relative focus:outline-none focus:ring-1 focus:ring-blue-400/40 ${isPublic ? "bg-blue-500/40" : "bg-white/10"}`}
               >
-                <div className={`absolute top-0.5 w-3 h-3 rounded-full transition-transform ${isPublic ? "translate-x-4 bg-blue-400" : "translate-x-0.5 bg-white/30"}`} />
-              </div>
+                <span className={`absolute top-0.5 w-3 h-3 rounded-full transition-transform ${isPublic ? "translate-x-4 bg-blue-400" : "translate-x-0.5 bg-white/30"}`} />
+              </button>
               <span className="text-[9px] mono text-white/40 uppercase tracking-widest">PUBLIC</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <div
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
                 onClick={() => setIsFeatured(!isFeatured)}
-                className={`w-8 h-4 rounded-full transition-colors relative ${isFeatured ? "bg-amber-500/40" : "bg-white/10"}`}
-                role="checkbox"
+                role="switch"
                 aria-checked={isFeatured}
+                aria-label="Toggle featured"
+                className={`w-8 h-4 rounded-full transition-colors relative focus:outline-none focus:ring-1 focus:ring-amber-400/40 ${isFeatured ? "bg-amber-500/40" : "bg-white/10"}`}
               >
-                <div className={`absolute top-0.5 w-3 h-3 rounded-full transition-transform ${isFeatured ? "translate-x-4 bg-amber-400" : "translate-x-0.5 bg-white/30"}`} />
-              </div>
+                <span className={`absolute top-0.5 w-3 h-3 rounded-full transition-transform ${isFeatured ? "translate-x-4 bg-amber-400" : "translate-x-0.5 bg-white/30"}`} />
+              </button>
               <span className="text-[9px] mono text-white/40 uppercase tracking-widest">FEATURED</span>
-            </label>
+            </div>
           </div>
 
           {error && (
