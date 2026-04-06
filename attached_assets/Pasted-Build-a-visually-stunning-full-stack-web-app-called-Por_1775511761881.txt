@@ -1,0 +1,181 @@
+Build a visually stunning full-stack web app called “Portfolio OS” — a classified control room / operator console for my portfolio.
+
+This should not look like a generic developer portfolio or SaaS dashboard. It should feel like a cinematic institutional system: dark glass, smoked panels, restrained amber + cold blue highlights, elegant typography, subtle scanlines/noise, beautiful motion, layered depth, and strong atmosphere. The mood is “forbidden research terminal meets luxury product design.”
+
+GOAL
+Create a portfolio site where each project is presented as an “incident,” “artifact,” or “operation,” and an onboard AI operator can explain, compare, and guide visitors through the work.
+
+CORE EXPERIENCE
+1. Landing / boot sequence
+   - A dramatic but fast-loading opening screen with a boot / system activation feel
+   - Give users an obvious path into the console
+   - Keep it tasteful, not gimmicky
+
+2. Main command center
+   - A beautiful central dashboard with:
+     - project map / graph / network view
+     - searchable project list
+     - featured dossiers
+     - metrics / tags / timelines
+   - The page should feel alive with subtle motion and ambient activity
+
+3. Project dossier pages
+   - Each project should have a dossier page with:
+     - title
+     - classification / status
+     - short summary
+     - problem / challenge
+     - approach
+     - key decisions
+     - outcomes
+     - tech stack
+     - media section
+     - related projects
+   - The layout should feel like a designed intelligence brief, not a blog post
+
+4. AI Operator panel
+   - Include an AI assistant panel that can:
+     - answer questions about the portfolio
+     - compare projects
+     - recommend which project to view next
+     - generate guided tours such as:
+       - “show me the most technically ambitious work”
+       - “show me the most visually ambitious work”
+       - “show me work relevant to product design / systems / AI”
+   - The assistant must answer only from the portfolio’s stored content, not make things up
+   - Responses should cite which project entries they are using and link to them in the UI
+
+5. Auth-gated Vault
+   - Add Replit Auth
+   - After login, unlock a “Vault” area with deeper private case-study notes / process notes
+   - Logged-out users should see only the public portfolio experience
+   - Keep auth implementation secure and simple using Replit’s built-in auth tools
+
+6. Admin / content management
+   - Create a minimal protected admin interface where I can:
+     - create a project
+     - edit a project
+     - mark a project public or private
+     - add tags
+     - add longform notes
+   - If a full CMS would slow things down, build a compact internal admin page instead of overengineering it
+
+TECH STACK
+Use a clean, modern, production-friendly TypeScript stack suitable for Replit.
+Preferred approach:
+- Next.js with TypeScript
+- Tailwind CSS
+- tasteful component primitives
+- Framer Motion for motion
+- Replit Auth
+- Replit SQL database / PostgreSQL with a clear schema
+- Drizzle ORM or another clean typed ORM
+- OpenAI via Replit AI Integrations for the operator
+
+If there is a simpler stack that will make the app more reliable on Replit while keeping the same experience, choose the more reliable option and explain the tradeoff.
+
+DATA MODEL
+Use a real database schema, not just hardcoded JSON.
+Suggested entities:
+- users
+- projects
+- project_sections or case_study_sections
+- tags
+- project_tag_join table
+- media_assets
+- operator_conversations
+- saved_tours or visitor_sessions
+- vault_notes
+
+Seed the database with 6 impressive placeholder projects so the app feels complete immediately.
+Make the seed content strong, believable, and well-written.
+Use categories like:
+- AI system / experiment
+- web app
+- immersive interface
+- design system
+- data visualization
+- speculative product
+
+VISUAL DIRECTION
+The visual quality matters as much as the engineering.
+Design principles:
+- sophisticated, cinematic, minimalist
+- dark surfaces with depth, glass, blur, reflections used carefully
+- grid-based layout with moments of asymmetry
+- typography should feel editorial + technical
+- motion should be smooth and restrained, never noisy
+- every screen should feel screenshot-worthy
+
+Avoid:
+- generic dashboard visuals
+- bright startup colors
+- cheesy hacker aesthetics
+- over-clutter
+- fake terminal spam
+- anything that looks like a template
+
+INTERACTIONS
+Include:
+- command palette
+- keyboard shortcuts for navigation
+- animated transitions between dashboard and dossiers
+- hover states that feel premium
+- expandable panels
+- filters by theme / medium / stack / ambition
+- compare mode for two projects side by side
+
+OPERATOR BEHAVIOR
+Use OpenAI through Replit-managed AI integration.
+The operator should:
+- be concise, sharp, and observant
+- answer from the portfolio corpus only
+- summarize differences between projects clearly
+- recommend sequences like a curator or mission operator
+- never invent projects or outcomes that do not exist
+- surface links to the related dossier pages in its responses
+
+IMPLEMENTATION DETAILS
+- Store persistent data in the database, not the filesystem
+- Structure the code cleanly for future expansion
+- Add comments only where helpful
+- Keep performance strong
+- Make the app responsive, but prioritize desktop polish first
+- Ensure accessibility is decent: keyboard support, focus states, contrast, reduced-motion respect
+- Use environment variables / Replit secrets correctly
+- Do not expose secrets in client code
+
+CONTENT / COPY TONE
+Write the placeholder project copy in a serious, elegant tone.
+Think:
+- precise
+- slightly mysterious
+- high-competence
+- restrained, not purple prose
+
+PUBLIC VS PRIVATE
+- Public users see the main command center, public dossiers, and the AI operator using public content
+- Authenticated users can access a private Vault with deeper notes
+- Admin pages must be protected
+
+DELIVERY PLAN
+Build this incrementally in milestones and checkpoint after each one:
+1. Scaffold the full-stack app, auth, database, seed data, and core routing
+2. Build the cinematic UI for landing, dashboard, and dossier pages
+3. Add the AI operator with project-grounded responses
+4. Add Vault, admin editing, polish, responsiveness, and deployment readiness
+
+At each checkpoint:
+- summarize what was built
+- mention any tradeoffs
+- recommend the next best improvement
+
+DONE CRITERIA
+The result should feel like something a creative technologist or design engineer would proudly use as their main portfolio:
+- visually exceptional
+- clearly structured
+- genuinely useful
+- easy to extend
+- ready for Autoscale deployment on Replit
+
+Start by creating the project, setting up the database schema and seed content, adding Replit Auth, and building the first working version of the landing page + command center.
