@@ -74,10 +74,26 @@ function Router() {
   );
 }
 
+function getRouterBase(): string {
+  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+  if (baseUrl) return baseUrl;
+  const knownRoutes = ["/dashboard", "/projects/", "/compare", "/operator", "/vault", "/admin"];
+  const pathname = window.location.pathname;
+  for (const route of knownRoutes) {
+    const idx = pathname.indexOf(route);
+    if (idx > 0) return pathname.slice(0, idx);
+  }
+  if (pathname !== "/" && !knownRoutes.some((r) => pathname === r || pathname.startsWith(r))) {
+    const parts = pathname.split("/").filter(Boolean);
+    if (parts.length > 1) return "/" + parts.slice(0, -1).join("/");
+  }
+  return "";
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+      <WouterRouter base={getRouterBase()}>
         <OperatorProvider>
           <Router />
         </OperatorProvider>
