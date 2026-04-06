@@ -75,8 +75,8 @@ async function seed() {
         },
       ],
       media: [
-        { type: "screenshot", url: null, caption: "Knowledge graph visualization", sortOrder: 0 },
-        { type: "demo", url: null, caption: "Multi-hop synthesis demo", sortOrder: 1 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Knowledge graph visualization", sortOrder: 0 },
+        { type: "demo", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Multi-hop synthesis demo", sortOrder: 1 },
       ],
     },
     {
@@ -124,8 +124,8 @@ async function seed() {
         },
       ],
       media: [
-        { type: "screenshot", url: null, caption: "Live grid state dashboard", sortOrder: 0 },
-        { type: "screenshot", url: null, caption: "Demand forecasting view", sortOrder: 1 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Live grid state dashboard", sortOrder: 0 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Demand forecasting view", sortOrder: 1 },
       ],
     },
     {
@@ -173,8 +173,8 @@ async function seed() {
         },
       ],
       media: [
-        { type: "video", url: null, caption: "Live installation footage", sortOrder: 0 },
-        { type: "screenshot", url: null, caption: "Particle field close-up", sortOrder: 1 },
+        { type: "video", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Live installation footage", sortOrder: 0 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Particle field close-up", sortOrder: 1 },
       ],
     },
     {
@@ -222,8 +222,8 @@ async function seed() {
         },
       ],
       media: [
-        { type: "screenshot", url: null, caption: "ZK proof flow diagram", sortOrder: 0 },
-        { type: "screenshot", url: null, caption: "SDK integration example", sortOrder: 1 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "ZK proof flow diagram", sortOrder: 0 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "SDK integration example", sortOrder: 1 },
       ],
     },
     {
@@ -271,8 +271,8 @@ async function seed() {
         },
       ],
       media: [
-        { type: "screenshot", url: null, caption: "Query interface with result chart", sortOrder: 0 },
-        { type: "screenshot", url: null, caption: "Schema discovery visualization", sortOrder: 1 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Query interface with result chart", sortOrder: 0 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Schema discovery visualization", sortOrder: 1 },
       ],
     },
     {
@@ -320,8 +320,8 @@ async function seed() {
         },
       ],
       media: [
-        { type: "screenshot", url: null, caption: "Transaction graph anomaly view", sortOrder: 0 },
-        { type: "screenshot", url: null, caption: "Real-time latency monitoring", sortOrder: 1 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Transaction graph anomaly view", sortOrder: 0 },
+        { type: "screenshot", url: "https://placehold.co/1280x720/0a0a0a/f59e0b?text=media+stub", caption: "Real-time latency monitoring", sortOrder: 1 },
       ],
     },
   ];
@@ -359,18 +359,14 @@ async function seed() {
     }
 
     if (media && media.length > 0) {
-      const mediaValues = media
-        .filter((m): m is typeof m & { url: string } => m.url !== null)
-        .map((m) => ({
-          projectId: inserted.id,
-          type: m.type,
-          url: m.url,
-          caption: m.caption,
-          sortOrder: m.sortOrder,
-        }));
-      if (mediaValues.length > 0) {
-        await db.insert(mediaAssetsTable).values(mediaValues).onConflictDoNothing();
-      }
+      const mediaValues = media.map((m) => ({
+        projectId: inserted.id,
+        type: m.type,
+        url: m.url,
+        caption: m.caption,
+        sortOrder: m.sortOrder,
+      }));
+      await db.insert(mediaAssetsTable).values(mediaValues).onConflictDoNothing();
     }
 
     console.log(`Created project: ${project.title}`);

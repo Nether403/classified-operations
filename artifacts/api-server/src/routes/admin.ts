@@ -2,15 +2,9 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
 import { db, projectsTable, tagsTable, projectTagsTable } from "@workspace/db";
 import { AdminListProjectsResponse } from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router: IRouter = Router();
-
-function isAdmin(req: Request): boolean {
-  if (!req.isAuthenticated()) return false;
-  const adminUserId = process.env.ADMIN_USER_ID;
-  if (adminUserId && req.user?.id !== adminUserId) return false;
-  return true;
-}
 
 async function getProjectWithTags(projectId: number) {
   const project = await db.query.projectsTable.findFirst({
@@ -27,16 +21,7 @@ async function getProjectWithTags(projectId: number) {
   return { ...project, tags: tagRows.map((r) => r.tag) };
 }
 
-router.get("/admin/projects", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-
+router.get("/admin/projects", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const projects = await db
     .select()
     .from(projectsTable)

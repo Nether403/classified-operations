@@ -6,6 +6,7 @@ import {
   CreateProjectMediaBody,
   ListProjectMediaResponseItem,
 } from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router: IRouter = Router();
 
@@ -26,12 +27,7 @@ router.get("/projects/:id/media", async (req: Request, res: Response): Promise<v
   res.json(ListProjectMediaResponse.parse(media));
 });
 
-router.post("/projects/:id/media", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.post("/projects/:id/media", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {

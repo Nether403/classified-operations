@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, tagsTable } from "@workspace/db";
 import { ListTagsResponse, CreateTagBody, ListTagsResponseItem } from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router: IRouter = Router();
 
@@ -9,12 +10,7 @@ router.get("/tags", async (_req: Request, res: Response): Promise<void> => {
   res.json(ListTagsResponse.parse(tags));
 });
 
-router.post("/tags", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.post("/tags", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const parsed = CreateTagBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

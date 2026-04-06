@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { requireAdmin } from "../middlewares/requireAdmin";
 import { eq, inArray, sql, and } from "drizzle-orm";
 import {
   db,
@@ -122,12 +123,7 @@ router.get("/projects", async (req: Request, res: Response): Promise<void> => {
   res.json(ListProjectsResponse.parse(valid));
 });
 
-router.post("/projects", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.post("/projects", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const parsed = CreateProjectBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -188,12 +184,7 @@ router.get("/projects/:id", async (req: Request, res: Response): Promise<void> =
   res.json(GetProjectResponse.parse(project));
 });
 
-router.patch("/projects/:id", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.patch("/projects/:id", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
@@ -233,12 +224,7 @@ router.patch("/projects/:id", async (req: Request, res: Response): Promise<void>
   res.json(ListProjectsResponseItem.parse(result));
 });
 
-router.delete("/projects/:id", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.delete("/projects/:id", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
@@ -276,12 +262,7 @@ router.get("/projects/:id/sections", async (req: Request, res: Response): Promis
   res.json(ListProjectSectionsResponse.parse(sections));
 });
 
-router.post("/projects/:id/sections", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.post("/projects/:id/sections", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) {
@@ -303,12 +284,7 @@ router.post("/projects/:id/sections", async (req: Request, res: Response): Promi
   res.status(201).json(section);
 });
 
-router.patch("/projects/:id/sections/:sectionId", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.patch("/projects/:id/sections/:sectionId", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const rawSectionId = Array.isArray(req.params.sectionId) ? req.params.sectionId[0] : req.params.sectionId;
   const sectionId = parseInt(rawSectionId, 10);
   if (isNaN(sectionId)) {
@@ -336,12 +312,7 @@ router.patch("/projects/:id/sections/:sectionId", async (req: Request, res: Resp
   res.json(UpdateProjectSectionResponse.parse(section));
 });
 
-router.delete("/projects/:id/sections/:sectionId", async (req: Request, res: Response): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.delete("/projects/:id/sections/:sectionId", requireAdmin, async (req: Request, res: Response): Promise<void> => {
   const rawSectionId = Array.isArray(req.params.sectionId) ? req.params.sectionId[0] : req.params.sectionId;
   const sectionId = parseInt(rawSectionId, 10);
   if (isNaN(sectionId)) {
