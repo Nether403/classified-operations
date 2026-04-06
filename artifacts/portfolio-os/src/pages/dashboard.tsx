@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useGetDashboardSummary, useListProjects, useListTags } from "@workspace/api-client-react";
 import type { Project, DashboardSummary } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
@@ -20,33 +20,41 @@ const itemVariants: Variants = {
 };
 
 function ProjectRow({ project }: { project: Project }) {
+  const [, setLocation] = useLocation();
   return (
-    <Link href={`/projects/${project.slug}`}>
-      <motion.div
-        variants={itemVariants}
-        className="glass glass-hover cursor-pointer flex items-center gap-4 px-4 py-3 group"
-        data-testid={`dashboard-project-row-${project.id}`}
-      >
-        <ClassificationBadge classification={project.classification} />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-white/85 group-hover:text-amber-400 transition-colors truncate">
-            {project.title}
-          </div>
-          <div className="text-xs text-white/35 truncate mt-0.5">{project.summary}</div>
+    <motion.div
+      variants={itemVariants}
+      className="glass glass-hover flex items-center gap-4 px-4 py-3 group"
+      data-testid={`dashboard-project-row-${project.id}`}
+    >
+      <ClassificationBadge classification={project.classification} />
+      <Link href={`/projects/${project.slug}`} className="flex-1 min-w-0 cursor-pointer">
+        <div className="text-sm font-medium text-white/85 group-hover:text-amber-400 transition-colors truncate">
+          {project.title}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {project.techStack.slice(0, 3).map((tech) => (
-            <span key={tech} className="text-[9px] mono px-1.5 py-0.5 bg-white/5 border border-white/8 text-white/35 rounded-sm">
-              {tech}
-            </span>
-          ))}
-          {project.year && (
-            <span className="text-[9px] mono text-white/25 ml-1">{project.year}</span>
-          )}
-        </div>
-        <span className="text-[9px] mono text-amber-500/30 group-hover:text-amber-500 transition-colors tracking-widest">→</span>
-      </motion.div>
-    </Link>
+        <div className="text-xs text-white/35 truncate mt-0.5">{project.summary}</div>
+      </Link>
+      <div className="flex items-center gap-2 shrink-0">
+        {project.techStack.slice(0, 3).map((tech) => (
+          <span key={tech} className="text-[9px] mono px-1.5 py-0.5 bg-white/5 border border-white/8 text-white/35 rounded-sm hidden sm:inline">
+            {tech}
+          </span>
+        ))}
+        {project.year && (
+          <span className="text-[9px] mono text-white/25 ml-1 hidden md:inline">{project.year}</span>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); setLocation(`/compare?a=${project.id}`); }}
+          className="text-[8px] mono text-blue-400/40 border border-blue-500/15 px-2 py-1 hover:text-blue-400 hover:border-blue-500/40 transition-colors tracking-widest uppercase shrink-0"
+          data-testid={`btn-compare-row-${project.id}`}
+        >
+          CMP
+        </button>
+      </div>
+      <Link href={`/projects/${project.slug}`}>
+        <span className="text-[9px] mono text-amber-500/30 group-hover:text-amber-500 transition-colors tracking-widest cursor-pointer">→</span>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -165,6 +173,7 @@ export function DashboardPage() {
   const [search, setSearch] = useState("");
   const [activeClassification, setActiveClassification] = useState("");
   const [activeTag, setActiveTag] = useState("");
+  const shouldReduceMotion = useReducedMotion();
 
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary();
   const { data: allProjects, isLoading: isLoadingProjects } = useListProjects();
@@ -219,9 +228,9 @@ export function DashboardPage() {
         </div>
 
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
+          variants={shouldReduceMotion ? undefined : containerVariants}
+          initial={shouldReduceMotion ? false : "hidden"}
+          animate={shouldReduceMotion ? false : "show"}
           className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12"
         >
           <motion.div variants={itemVariants} className="glass p-6 relative overflow-hidden">
@@ -274,8 +283,8 @@ export function DashboardPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, x: 16 }}
+            animate={shouldReduceMotion ? false : { opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
           >
             <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase flex items-center gap-4 mb-4">
@@ -289,8 +298,8 @@ export function DashboardPage() {
         </div>
 
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={shouldReduceMotion ? false : { opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
           <div className="text-[10px] mono text-white/30 tracking-[0.2em] uppercase flex items-center gap-4 mb-4">
@@ -391,9 +400,9 @@ export function DashboardPage() {
           ) : (
             <motion.div
               className="flex flex-col gap-2"
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
+              variants={shouldReduceMotion ? undefined : containerVariants}
+              initial={shouldReduceMotion ? false : "hidden"}
+              animate={shouldReduceMotion ? false : "show"}
               data-testid="dashboard-project-list"
             >
               {filteredProjects.map((project) => (

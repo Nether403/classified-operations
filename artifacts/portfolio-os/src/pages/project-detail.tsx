@@ -1,15 +1,14 @@
 import { useRoute, Link, useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useListProjects, useGetProject, getGetProjectQueryKey } from "@workspace/api-client-react";
 import type { MediaAsset } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 export function ProjectDetailPage() {
   const [, params] = useRoute("/projects/:slug");
   const [, setLocation] = useLocation();
+  const shouldReduceMotion = useReducedMotion();
   const slug = params?.slug ?? "";
 
   const { data: projects } = useListProjects();
@@ -58,8 +57,8 @@ export function ProjectDetailPage() {
     <div className="min-h-screen pt-20" data-testid="project-detail-page">
       <div className="max-w-4xl mx-auto px-6 py-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? false : { opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div className="mb-8">
@@ -78,7 +77,7 @@ export function ProjectDetailPage() {
                 )}
               </div>
               <button
-                onClick={() => setLocation(BASE + `/compare?a=${project.id}`)}
+                onClick={() => setLocation(`/compare?a=${project.id}`)}
                 className="text-[9px] mono text-blue-400/60 border border-blue-500/20 px-3 py-1.5 hover:text-blue-400 hover:border-blue-500/40 transition-colors tracking-widest uppercase"
                 data-testid="btn-compare"
               >
@@ -187,9 +186,9 @@ export function ProjectDetailPage() {
                 {(project.media as MediaAsset[]).map((asset, i) => (
                   <motion.div
                     key={asset.id}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.05 }}
+                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
+                    animate={shouldReduceMotion ? false : { opacity: 1, scale: 1 }}
+                    transition={{ delay: shouldReduceMotion ? 0 : i * 0.05 }}
                     className="glass p-3"
                     data-testid={`media-asset-${asset.id}`}
                   >
