@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { useGetDashboardSummary, useListProjects, useListTags } from "@workspace/api-client-react";
 import type { Project, DashboardSummary } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
+import { useOpenOperator } from "@/components/operator-panel";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -174,6 +175,7 @@ export function DashboardPage() {
   const [activeClassification, setActiveClassification] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const shouldReduceMotion = useReducedMotion();
+  const { openPanel } = useOpenOperator();
 
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary();
   const { data: allProjects, isLoading: isLoadingProjects } = useListProjects();
@@ -218,13 +220,25 @@ export function DashboardPage() {
               COMMAND CENTER ACTIVE
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white/90 mb-4" data-testid="dashboard-heading">
-            DASHBOARD
-          </h1>
-          <div className="section-line mb-6 max-w-xl" />
-          <p className="text-base text-white/55 leading-relaxed max-w-2xl font-light">
-            System overview and classification metrics. Real-time operation status.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white/90 mb-4" data-testid="dashboard-heading">
+                DASHBOARD
+              </h1>
+              <div className="section-line mb-6 max-w-xl" />
+              <p className="text-base text-white/55 leading-relaxed max-w-2xl font-light">
+                System overview and classification metrics. Real-time operation status.
+              </p>
+            </div>
+            <button
+              onClick={() => openPanel()}
+              className="shrink-0 glass px-4 py-2.5 text-[9px] mono tracking-[0.2em] uppercase border border-blue-500/20 text-blue-400/50 hover:text-blue-400 hover:border-blue-500/40 transition-colors flex items-center gap-2 mt-2"
+              data-testid="dashboard-btn-operator"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+              ASK OPERATOR
+            </button>
+          </div>
         </div>
 
         <motion.div

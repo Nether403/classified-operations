@@ -18,7 +18,7 @@ Portfolio OS is a cinematic full-stack portfolio web app with a "forbidden resea
 
 - **Dossier archive**: 6 seeded projects with classification badges, filter by tag/clearance/search
 - **Project detail pages**: tech stack, domains, operation file sections, related projects
-- **AI Operator (NEXUS-7)**: OpenAI-powered chat interface grounded in portfolio data
+- **AI Operator (NEXUS-7)**: Persistent floating panel + full-page view, OpenAI SSE streaming, grounded in portfolio corpus
 - **Vault**: auth-gated private notes per project
 - **Cinematic UI**: glass morphism, amber/blue accents, monospace terminal aesthetic
 

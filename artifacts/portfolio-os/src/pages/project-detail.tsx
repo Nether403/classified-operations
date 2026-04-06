@@ -4,11 +4,13 @@ import { useListProjects, useGetProject, getGetProjectQueryKey } from "@workspac
 import type { MediaAsset } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useOpenOperator } from "@/components/operator-panel";
 
 export function ProjectDetailPage() {
   const [, params] = useRoute("/projects/:slug");
   const [, setLocation] = useLocation();
   const shouldReduceMotion = useReducedMotion();
+  const { openPanel } = useOpenOperator();
   const slug = params?.slug ?? "";
 
   const { data: projects } = useListProjects();
@@ -76,13 +78,23 @@ export function ProjectDetailPage() {
                   <span className="text-[10px] mono text-white/25">{project.year}</span>
                 )}
               </div>
-              <button
-                onClick={() => setLocation(`/compare?a=${project.id}`)}
-                className="text-[9px] mono text-blue-400/60 border border-blue-500/20 px-3 py-1.5 hover:text-blue-400 hover:border-blue-500/40 transition-colors tracking-widest uppercase"
-                data-testid="btn-compare"
-              >
-                COMPARE
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openPanel(`Tell me about the project: ${project.title}. What is its technical approach, key outcomes, and how does it compare to similar work?`)}
+                  className="text-[9px] mono text-blue-400/40 border border-blue-500/15 px-3 py-1.5 hover:text-blue-400 hover:border-blue-500/40 transition-colors tracking-widest uppercase flex items-center gap-1.5"
+                  data-testid="btn-ask-operator"
+                >
+                  <div className="w-1 h-1 rounded-full bg-blue-400/60" />
+                  ASK AI
+                </button>
+                <button
+                  onClick={() => setLocation(`/compare?a=${project.id}`)}
+                  className="text-[9px] mono text-blue-400/60 border border-blue-500/20 px-3 py-1.5 hover:text-blue-400 hover:border-blue-500/40 transition-colors tracking-widest uppercase"
+                  data-testid="btn-compare"
+                >
+                  COMPARE
+                </button>
+              </div>
             </div>
 
             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white/90 mb-4">

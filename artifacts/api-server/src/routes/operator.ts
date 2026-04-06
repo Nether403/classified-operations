@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 import {
   db,
   operatorConversationsTable,
@@ -9,6 +9,7 @@ import {
   projectTagsTable,
 } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { isAdmin } from "../middlewares/requireAdmin";
 import { randomUUID } from "crypto";
 import {
   OperatorChatBody,
@@ -36,18 +37,29 @@ interface OperatorJsonResponse {
   tour?: TourStop[];
 }
 
-async function buildProjectCorpus(): Promise<string> {
-  const projects = await db.select().from(projectsTable).orderBy(projectsTable.id);
+async function buildProjectCorpus(adminAccess: boolean): Promise<string> {
+  const query = db.select().from(projectsTable).orderBy(projectsTable.id);
+  const projects = adminAccess
+    ? await query
+    : await db
+        .select()
+        .from(projectsTable)
+        .where(eq(projectsTable.isPublic, true))
+        .orderBy(projectsTable.id);
 
   const projectIds = projects.map((p) => p.id);
+  if (projectIds.length === 0) return "No projects on file.";
 
   const [sections, projectTagRows] = await Promise.all([
-    projectIds.length > 0
-      ? db.select().from(projectSectionsTable).where(inArray(projectSectionsTable.projectId, projectIds)).orderBy(projectSectionsTable.sortOrder)
-      : Promise.resolve([]),
-    projectIds.length > 0
-      ? db.select({ projectId: projectTagsTable.projectId, tagId: projectTagsTable.tagId }).from(projectTagsTable).where(inArray(projectTagsTable.projectId, projectIds))
-      : Promise.resolve([]),
+    db
+      .select()
+      .from(projectSectionsTable)
+      .where(inArray(projectSectionsTable.projectId, projectIds))
+      .orderBy(projectSectionsTable.sortOrder),
+    db
+      .select({ projectId: projectTagsTable.projectId, tagId: projectTagsTable.tagId })
+      .from(projectTagsTable)
+      .where(inArray(projectTagsTable.projectId, projectIds)),
   ]);
 
   const tagIds = [...new Set(projectTagRows.map((r) => r.tagId))];
@@ -135,6 +147,24 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
   const { message, conversationId: incomingId } = parsed.data;
   const conversationId = incomingId ?? randomUUID();
   const userId = req.isAuthenticated() ? req.user?.id : null;
+  const adminAccess = isAdmin(req);
+
+  // Fetch conversation history BEFORE inserting the new user message to avoid duplication
+  const existingHistory = incomingId
+    ? await db
+        .select()
+        .from(operatorConversationsTable)
+        .where(
+          and(
+            eq(operatorConversationsTable.conversationId, conversationId),
+            userId
+              ? eq(operatorConversationsTable.userId, userId)
+              : eq(operatorConversationsTable.userId, "anonymous"),
+          ),
+        )
+        .orderBy(operatorConversationsTable.createdAt)
+        .limit(18)
+    : [];
 
   try {
     await db.insert(operatorConversationsTable).values({
@@ -155,7 +185,7 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
 
   let corpus = "";
   try {
-    corpus = await buildProjectCorpus();
+    corpus = await buildProjectCorpus(adminAccess);
   } catch (err) {
     req.log?.error?.({ err }, "Failed to build project corpus");
     res.write(`data: ${JSON.stringify({ error: "Failed to load portfolio data" })}\n\n`);
@@ -163,14 +193,7 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
     return;
   }
 
-  const history = await db
-    .select()
-    .from(operatorConversationsTable)
-    .where(eq(operatorConversationsTable.conversationId, conversationId))
-    .orderBy(operatorConversationsTable.createdAt)
-    .limit(20);
-
-  const chatHistory = history
+  const chatHistory = existingHistory
     .filter((h) => h.role === "user" || h.role === "assistant")
     .map((h) => ({
       role: h.role as "user" | "assistant",
@@ -207,19 +230,32 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
     return;
   }
 
-  let parsed2: OperatorJsonResponse = { message: fullResponse, citations: [] };
+  // Parse structured JSON from AI response
+  let parsedResponse: OperatorJsonResponse = { message: fullResponse, citations: [] };
   try {
     const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const rawJson = JSON.parse(jsonMatch[0]) as OperatorJsonResponse;
-      parsed2 = {
-        message: rawJson.message || fullResponse,
-        citations: Array.isArray(rawJson.citations) ? rawJson.citations : [],
-        tour: Array.isArray(rawJson.tour) ? rawJson.tour : undefined,
+      parsedResponse = {
+        message: typeof rawJson.message === "string" && rawJson.message ? rawJson.message : fullResponse,
+        citations: Array.isArray(rawJson.citations)
+          ? rawJson.citations.filter(
+              (c) => typeof c.projectId === "number" && typeof c.title === "string" && typeof c.slug === "string",
+            )
+          : [],
+        tour: Array.isArray(rawJson.tour)
+          ? rawJson.tour.filter(
+              (s) =>
+                typeof s.projectId === "number" &&
+                typeof s.title === "string" &&
+                typeof s.slug === "string" &&
+                typeof s.rationale === "string",
+            )
+          : undefined,
       };
     }
   } catch {
-    parsed2 = { message: fullResponse, citations: [] };
+    parsedResponse = { message: fullResponse, citations: [] };
   }
 
   try {
@@ -227,8 +263,8 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
       conversationId,
       userId: userId ?? null,
       role: "assistant",
-      message: parsed2.message,
-      citations: parsed2.citations,
+      message: parsedResponse.message,
+      citations: parsedResponse.citations,
     });
   } catch (err) {
     req.log?.error?.({ err }, "Failed to persist assistant message");
@@ -238,8 +274,8 @@ router.post("/operator/chat", async (req: Request, res: Response): Promise<void>
     `data: ${JSON.stringify({
       done: true,
       conversationId,
-      citations: parsed2.citations,
-      tour: parsed2.tour,
+      citations: parsedResponse.citations,
+      tour: parsedResponse.tour,
     })}\n\n`,
   );
   res.end();

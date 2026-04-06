@@ -11,6 +11,8 @@ import { DashboardPage } from "@/pages/dashboard";
 import { ComparePage } from "@/pages/compare";
 import { NotFoundPage } from "@/pages/not-found";
 import { CommandPalette } from "@/components/command-palette";
+import { OperatorProvider } from "@/store/operator-store";
+import { OperatorPanel } from "@/components/operator-panel";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +67,7 @@ function Router() {
       </main>
       <Footer />
       <CommandPalette />
+      <OperatorPanel />
     </>
   );
 }
@@ -73,7 +76,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-        <Router />
+        <OperatorProvider>
+          <Router />
+        </OperatorProvider>
       </WouterRouter>
     </QueryClientProvider>
   );

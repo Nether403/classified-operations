@@ -1,33 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const API_BASE = `${BASE}/api`;
-
-interface ProjectCitation {
-  projectId: number;
-  title: string;
-  slug: string;
-}
-
-interface TourStop {
-  projectId: number;
-  title: string;
-  slug: string;
-  rationale: string;
-}
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  streaming?: boolean;
-  citations?: ProjectCitation[];
-  tour?: TourStop[];
-  timestamp: Date;
-  error?: boolean;
-}
+import { useOperator, type OperatorMessage, type ProjectCitation, type TourStop } from "@/store/operator-store";
 
 function CitationChip({ citation }: { citation: ProjectCitation }) {
   return (
@@ -72,7 +46,7 @@ function TourSequence({ tour }: { tour: TourStop[] }) {
   );
 }
 
-function OperatorMessage({ msg }: { msg: Message }) {
+function OperatorMessageBubble({ msg }: { msg: OperatorMessage }) {
   const isUser = msg.role === "user";
 
   return (
@@ -151,176 +125,21 @@ const SUGGESTED_QUERIES = [
 ];
 
 export function OperatorPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "init",
-      role: "assistant",
-      content:
-        "NEXUS-7 OPERATOR ONLINE. Portfolio intelligence interface active. Ask me about any project, technical decisions, outcomes, or engineering philosophy. I can compare projects, recommend viewing sequences, and generate guided tours. What do you want to know?",
-      timestamp: new Date(),
-    },
-  ]);
+  const { state, sendMessage } = useOperator();
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [conversationId] = useState(() => crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [state.messages]);
 
-  const sendMessage = useCallback(
-    async (text?: string) => {
-      const messageText = text ?? input.trim();
-      if (!messageText || loading) return;
-
-      const userMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: messageText,
-        timestamp: new Date(),
-      };
-
-      const assistantMsgId = crypto.randomUUID();
-      const assistantMsg: Message = {
-        id: assistantMsgId,
-        role: "assistant",
-        content: "",
-        streaming: true,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, userMsg, assistantMsg]);
-      setInput("");
-      setLoading(true);
-
-      try {
-        const res = await fetch(`${API_BASE}/operator/chat`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: messageText, conversationId }),
-        });
-
-        if (!res.ok || !res.body) {
-          throw new Error("Connection failed");
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let accumulated = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const raw = line.slice(6).trim();
-            if (!raw) continue;
-
-            try {
-              const event = JSON.parse(raw) as {
-                content?: string;
-                done?: boolean;
-                conversationId?: string;
-                citations?: ProjectCitation[];
-                tour?: TourStop[];
-                error?: string;
-              };
-
-              if (event.error) {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? { ...m, content: event.error!, streaming: false, error: true }
-                      : m,
-                  ),
-                );
-                return;
-              }
-
-              if (event.content) {
-                accumulated += event.content;
-
-                let displayText = accumulated;
-                try {
-                  const jsonStart = accumulated.indexOf("{");
-                  if (jsonStart !== -1) {
-                    const parsed = JSON.parse(accumulated.slice(jsonStart)) as { message?: string };
-                    if (parsed.message) displayText = parsed.message;
-                  }
-                } catch {
-                  displayText = accumulated.replace(/^\s*\{[\s\S]*$/, "").trim() || accumulated;
-                }
-
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId ? { ...m, content: displayText, streaming: true } : m,
-                  ),
-                );
-              }
-
-              if (event.done) {
-                let finalText = accumulated;
-                let citations: ProjectCitation[] = event.citations ?? [];
-                let tour: TourStop[] | undefined = event.tour;
-
-                try {
-                  const jsonMatch = accumulated.match(/\{[\s\S]*\}/);
-                  if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0]) as {
-                      message?: string;
-                      citations?: ProjectCitation[];
-                      tour?: TourStop[];
-                    };
-                    if (parsed.message) finalText = parsed.message;
-                    if (Array.isArray(parsed.citations)) citations = parsed.citations;
-                    if (Array.isArray(parsed.tour)) tour = parsed.tour;
-                  }
-                } catch {
-                  finalText = accumulated;
-                }
-
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? { ...m, content: finalText, streaming: false, citations, tour }
-                      : m,
-                  ),
-                );
-              }
-            } catch {
-              // ignore parse errors on individual chunks
-            }
-          }
-        }
-      } catch {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsgId
-              ? {
-                  ...m,
-                  content: "SIGNAL LOST — operator connection interrupted. Please try again.",
-                  streaming: false,
-                  error: true,
-                }
-              : m,
-          ),
-        );
-      } finally {
-        setLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 100);
-      }
-    },
-    [input, loading, conversationId],
-  );
+  async function handleSend(text?: string) {
+    const messageText = text ?? input.trim();
+    if (!messageText || state.loading) return;
+    setInput("");
+    await sendMessage(messageText);
+  }
 
   return (
     <div className="min-h-screen pt-14 flex flex-col" data-testid="operator-page">
@@ -351,12 +170,12 @@ export function OperatorPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
           <AnimatePresence initial={false}>
-            {messages.map((msg) => (
-              <OperatorMessage key={msg.id} msg={msg} />
+            {state.messages.map((msg) => (
+              <OperatorMessageBubble key={msg.id} msg={msg} />
             ))}
           </AnimatePresence>
 
-          {loading && !messages.find((m) => m.streaming) && (
+          {state.loading && !state.messages.find((m) => m.streaming) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -385,16 +204,15 @@ export function OperatorPage() {
         </div>
       </div>
 
-      {messages.length === 1 && !loading && (
+      {state.messages.length === 1 && !state.loading && (
         <div className="max-w-4xl mx-auto px-6 pb-4 w-full">
           <div className="text-[9px] mono text-white/20 tracking-[0.2em] uppercase mb-3">SUGGESTED QUERIES</div>
           <div className="flex flex-wrap gap-2" data-testid="suggested-queries">
             {SUGGESTED_QUERIES.map((q) => (
               <button
                 key={q}
-                onClick={() => sendMessage(q)}
+                onClick={() => void handleSend(q)}
                 className="text-[10px] mono text-white/35 border border-white/8 px-3 py-1.5 hover:text-white/70 hover:border-white/20 transition-colors text-left"
-                data-testid={`suggested-query-${q.slice(0, 20).replace(/\s+/g, "-").toLowerCase()}`}
               >
                 {q}
               </button>
@@ -416,19 +234,19 @@ export function OperatorPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    void sendMessage();
+                    void handleSend();
                   }
                 }}
                 placeholder="Query the operator..."
-                disabled={loading}
+                disabled={state.loading}
                 className="flex-1 bg-transparent border-0 outline-none text-sm text-white/80 placeholder:text-white/20 py-3 mono"
                 data-testid="operator-input"
                 autoComplete="off"
               />
             </div>
             <button
-              onClick={() => void sendMessage()}
-              disabled={loading || !input.trim()}
+              onClick={() => void handleSend()}
+              disabled={state.loading || !input.trim()}
               className="glass px-6 py-3 text-[10px] mono tracking-[0.2em] uppercase border border-amber-500/20 text-amber-500/60 hover:text-amber-500 hover:border-amber-500/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               data-testid="btn-transmit"
             >
