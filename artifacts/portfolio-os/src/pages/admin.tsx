@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
@@ -618,6 +618,7 @@ function ProjectForm({
 }
 
 export function AdminPage() {
+  const prefersReducedMotion = useReducedMotion();
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const qc = useQueryClient();
@@ -683,7 +684,7 @@ export function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="glass p-12 max-w-md w-full mx-6 text-center"
         >

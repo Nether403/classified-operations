@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { useGetCurrentAuthUser } from "@workspace/api-client-react";
 
@@ -8,6 +8,10 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 function loginUrl(returnTo?: string): string {
   const to = returnTo ?? window.location.pathname;
   return `${BASE}/api/login?returnTo=${encodeURIComponent(to)}`;
+}
+
+function logoutUrl(): string {
+  return `${BASE}/api/logout?returnTo=${encodeURIComponent(window.location.pathname)}`;
 }
 
 const navItems = [
@@ -26,6 +30,7 @@ export function Nav() {
   const user = userResponse?.user;
   const isAuthenticated = !!user;
   const isAdmin = !!userResponse?.isAdmin;
+  const prefersReducedMotion = useReducedMotion();
 
   const visibleItems = navItems.filter((item) => {
     if ((item as { authRequired?: boolean }).authRequired && !isAuthenticated) return false;
@@ -96,7 +101,7 @@ export function Nav() {
                   </span>
                 </div>
                 <a
-                  href={`${BASE}/api/logout`}
+                  href={logoutUrl()}
                   className="text-[10px] mono text-white/30 hover:text-white/60 tracking-[0.15em] uppercase transition-colors"
                   data-testid="btn-logout"
                 >
@@ -139,10 +144,10 @@ export function Nav() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -8 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
             className="fixed top-14 left-0 right-0 z-30 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-white/5 md:hidden"
             data-testid="mobile-menu"
           >
@@ -174,7 +179,7 @@ export function Nav() {
                       </span>
                     </div>
                     <a
-                      href={`${BASE}/api/logout`}
+                      href={logoutUrl()}
                       className="text-[10px] mono text-white/30 hover:text-white/60 tracking-[0.15em] uppercase transition-colors"
                     >
                       EXIT

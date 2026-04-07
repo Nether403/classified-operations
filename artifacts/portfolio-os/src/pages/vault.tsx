@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Link } from "wouter";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
@@ -87,6 +87,7 @@ function VaultCard({
 }
 
 export function VaultPage() {
+  const prefersReducedMotion = useReducedMotion();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { data: projects } = useListProjects();
 
@@ -109,7 +110,7 @@ export function VaultPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="glass p-12 max-w-md w-full mx-6 text-center"
           data-testid="vault-locked"
@@ -145,7 +146,7 @@ export function VaultPage() {
     <div className="min-h-screen pt-14" data-testid="vault-page">
       <div className="max-w-5xl mx-auto px-6 py-12">
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-10"
         >
