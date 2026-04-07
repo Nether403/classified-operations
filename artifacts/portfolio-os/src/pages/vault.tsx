@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Link } from "wouter";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
+import { useSEO } from "@/hooks/use-seo";
 import { useListProjects } from "@workspace/api-client-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -87,6 +88,7 @@ function VaultCard({
 }
 
 export function VaultPage() {
+  useSEO({ title: "VAULT — CLASSIFIED ACCESS", description: "Restricted access area. Authenticated clearance required to view vault contents." });
   const prefersReducedMotion = useReducedMotion();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { data: projects } = useListProjects();

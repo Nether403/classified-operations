@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { useOperator, type OperatorMessage, type ProjectCitation, type TourStop } from "@/store/operator-store";
+import { useSEO } from "@/hooks/use-seo";
 
 function CitationChip({ citation }: { citation: ProjectCitation }) {
   return (
@@ -125,6 +126,7 @@ const SUGGESTED_QUERIES = [
 ];
 
 export function OperatorPage() {
+  useSEO({ title: "AI OPERATOR — NEXUS-7", description: "Classified intelligence interface. Ask about projects, technical approaches, and portfolio insights." });
   const { state, sendMessage } = useOperator();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);

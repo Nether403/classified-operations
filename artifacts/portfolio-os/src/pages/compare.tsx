@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { useListProjects } from "@workspace/api-client-react";
 import type { Project } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
+import { useSEO } from "@/hooks/use-seo";
 
 function ProjectSelect({ 
   value, 
@@ -91,6 +92,7 @@ function ProjectCard({ project }: { project: Project | undefined }) {
 }
 
 export function ComparePage() {
+  useSEO({ title: "COMPARE OPERATIONS", description: "Side-by-side comparison of classified dossiers. Analyze technical approaches and outcomes." });
   const { data: projects = [], isLoading } = useListProjects();
 
   const preselectedId = useMemo(() => {

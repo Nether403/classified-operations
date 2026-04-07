@@ -5,8 +5,27 @@ import type { MediaAsset } from "@workspace/api-client-react";
 import { ClassificationBadge } from "@/components/ui/classification-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useOpenOperator } from "@/components/operator-panel";
+import { CodeBlock, parseContentBlocks } from "@/components/ui/code-block";
+import { useSEO } from "@/hooks/use-seo";
 
-export function ProjectDetailPage() {
+function SectionContent({ content }: { content: string }) {
+  const blocks = parseContentBlocks(content);
+  return (
+    <div className="text-sm text-white/55 leading-relaxed pl-4 space-y-3">
+      {blocks.map((block, i) =>
+        block.type === "code" ? (
+          <CodeBlock key={i} code={block.content} lang={block.lang} />
+        ) : (
+          block.content.split("\n\n").map((para, j) =>
+            para.trim() ? <p key={j}>{para}</p> : null
+          )
+        )
+      )}
+    </div>
+  );
+}
+
+function ProjectDetailContent() {
   const [, params] = useRoute("/projects/:slug");
   const [, setLocation] = useLocation();
   const shouldReduceMotion = useReducedMotion();
@@ -16,11 +35,17 @@ export function ProjectDetailPage() {
   const { data: projects } = useListProjects();
   const projectId = projects?.find((p) => p.slug === slug)?.id;
 
-  const { data: project, isLoading } = useGetProject(projectId as number, { 
-    query: { 
+  const { data: project, isLoading } = useGetProject(projectId as number, {
+    query: {
       enabled: !!projectId,
       queryKey: getGetProjectQueryKey(projectId as number)
-    } 
+    }
+  });
+
+  useSEO({
+    title: project?.title ?? (isLoading ? "LOADING..." : "NOT FOUND"),
+    description: project?.summary,
+    classification: project?.classification,
   });
 
   if (isLoading || (!projectId && !projects)) {
@@ -109,13 +134,19 @@ export function ProjectDetailPage() {
           </div>
 
           {project.coverImageUrl && (
-            <motion.div 
-              className="mb-12 border border-white/10 p-2 glass rounded-md overflow-hidden"
+            <motion.div
+              className="mb-12 border border-white/10 p-2 glass overflow-hidden"
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <img src={project.coverImageUrl} alt={project.title} className="w-full h-auto aspect-video object-cover opacity-80 mix-blend-screen grayscale" />
+              <img
+                src={project.coverImageUrl}
+                alt={project.title}
+                className="w-full h-auto aspect-video object-cover opacity-80 mix-blend-screen grayscale"
+                loading="lazy"
+                decoding="async"
+              />
             </motion.div>
           )}
 
@@ -126,12 +157,13 @@ export function ProjectDetailPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {project.techStack.map((tech) => (
-                  <span
+                  <motion.span
                     key={tech}
-                    className="text-[10px] mono px-3 py-1 bg-white/5 border border-white/8 text-white/50 rounded-sm"
+                    whileHover={{ scale: 1.05 }}
+                    className="text-[10px] mono px-3 py-1 bg-white/5 border border-white/8 text-white/50 rounded-sm cursor-default"
                   >
                     {tech}
-                  </span>
+                  </motion.span>
                 ))}
               </div>
             </div>
@@ -159,12 +191,12 @@ export function ProjectDetailPage() {
                 <div className="section-line flex-1" />
               </div>
 
-              {project.sections.sort((a,b) => a.sortOrder - b.sortOrder).map((section, i) => (
+              {project.sections.sort((a, b) => a.sortOrder - b.sortOrder).map((section, i) => (
                 <motion.div
                   key={section.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.1 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: -10 }}
+                  animate={shouldReduceMotion ? false : { opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.08 }}
                   className="glass p-6"
                 >
                   <div className="flex items-center gap-3 mb-4">
@@ -178,11 +210,7 @@ export function ProjectDetailPage() {
                       </h3>
                     </div>
                   </div>
-                  <div className="text-sm text-white/55 leading-relaxed pl-4 prose prose-invert max-w-none prose-p:mb-4">
-                    {section.content.split('\n\n').map((para, idx) => (
-                      <p key={idx}>{para}</p>
-                    ))}
-                  </div>
+                  <SectionContent content={section.content} />
                 </motion.div>
               ))}
             </div>
@@ -209,6 +237,8 @@ export function ProjectDetailPage() {
                         src={asset.url}
                         alt={asset.altText || asset.caption || "Media asset"}
                         className="w-full h-48 object-cover opacity-75 mix-blend-screen grayscale mb-3"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     {asset.type === "video" && asset.url && (
@@ -216,6 +246,7 @@ export function ProjectDetailPage() {
                         src={asset.url}
                         controls
                         className="w-full h-48 object-cover opacity-80 mb-3"
+                        preload="metadata"
                       />
                     )}
                     <div className="px-1">
@@ -258,4 +289,8 @@ export function ProjectDetailPage() {
       </div>
     </div>
   );
+}
+
+export function ProjectDetailPage() {
+  return <ProjectDetailContent />;
 }

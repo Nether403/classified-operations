@@ -37,7 +37,8 @@ type OperatorAction =
   | { type: "TOGGLE_PANEL" }
   | { type: "ADD_MESSAGE"; message: OperatorMessage }
   | { type: "UPDATE_MESSAGE"; id: string; updates: Partial<OperatorMessage> }
-  | { type: "SET_LOADING"; loading: boolean };
+  | { type: "SET_LOADING"; loading: boolean }
+  | { type: "CLEAR_MESSAGES" };
 
 function operatorReducer(state: OperatorState, action: OperatorAction): OperatorState {
   switch (action.type) {
@@ -58,6 +59,8 @@ function operatorReducer(state: OperatorState, action: OperatorAction): Operator
       };
     case "SET_LOADING":
       return { ...state, loading: action.loading };
+    case "CLEAR_MESSAGES":
+      return { ...state, messages: [], conversationId: crypto.randomUUID() };
     default:
       return state;
   }

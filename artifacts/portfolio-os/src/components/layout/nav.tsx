@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import { useGetCurrentAuthUser } from "@workspace/api-client-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -22,6 +23,31 @@ const navItems = [
   { label: "VAULT", href: "/vault", authRequired: true },
   { label: "ADMIN", href: "/admin", adminRequired: true },
 ];
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="text-white/30 hover:text-amber-500 transition-colors p-1 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "DECLASSIFIED VIEW" : "CLASSIFIED VIEW"}
+      data-testid="btn-theme-toggle"
+    >
+      {isDark ? (
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.364 3.636l-1.06 1.06M4.696 11.304l-1.06 1.06M12.364 12.364l-1.06-1.06M4.696 4.696l-1.06-1.06" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M14 9.5A6.5 6.5 0 116.5 2c-.5 0-1 .05-1.5.15a6.5 6.5 0 009.85 7.35" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        </svg>
+      )}
+    </button>
+  );
+}
 
 export function Nav() {
   const [location] = useLocation();
@@ -84,12 +110,14 @@ export function Nav() {
             })}
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="hidden lg:flex items-center gap-2 text-white/30">
               <span className="text-[10px] mono">CMD</span>
               <span className="text-[10px] mono">+</span>
               <span className="text-[10px] mono">K</span>
             </div>
+
+            <ThemeToggle />
 
             <div className="w-px h-4 bg-white/10 hidden md:block" />
 
