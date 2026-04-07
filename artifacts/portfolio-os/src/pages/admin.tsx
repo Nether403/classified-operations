@@ -667,17 +667,18 @@ export function AdminPage() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin-projects"] }),
   });
 
-  if (authLoading) {
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      window.location.href = `${BASE}/api/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
+    }
+  }, [authLoading, isAuthenticated]);
+
+  if (authLoading || (!isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-6 h-6 border border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    window.location.href = `${BASE}/api/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
-    return null;
   }
 
   if (!isAdmin) {
